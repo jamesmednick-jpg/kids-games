@@ -1,5 +1,6 @@
-import { SHAPES, LOGICAL_W, LOGICAL_H, buildHand } from './geometry.js';
+import { SHAPES, LOGICAL_W, LOGICAL_H, buildHand, hitNail, interpolate, pointInPolygon } from './geometry.js';
 import { drawScene } from './render.js';
+import { NailLayer } from './paint.js';
 
 // ===== Parent config: edit these freely =====
 export const CAPTION = 'Nail Salon';
@@ -14,7 +15,7 @@ export const SKIN_TONES = ['#f8d9c4', '#e8b894', '#b87a4b', '#6b4226'];
 const $ = id => document.getElementById(id);
 const els = {
   shape: $('screen-shape'), salon: $('screen-salon'), skins: $('skins'), tiles: $('tiles'),
-  stage: $('stage'), hand: $('hand'),
+  stage: $('stage'), hand: $('hand'), palette: $('palette'),
 };
 
 export const state = {
@@ -77,11 +78,26 @@ function drawTile(canvas, shape) {
 function startSalon(shape) {
   state.shape = shape;
   state.hand = buildHand(shape);
-  state.layers = [];
   state.frames = 0;
   showScreen('salon');
   fitCanvas();
+  const layerDpr = Math.min(4, Math.max(1, Math.ceil(view.scale * view.dpr)));
+  state.layers = state.hand.nails.map(n => new NailLayer(n, layerDpr));
+  state.activeNail = -1;
   state.dirty = true;
+}
+
+function buildPalette() {
+  els.palette.innerHTML = '';
+  PALETTE.forEach((color, i) => {
+    const b = document.createElement('button');
+    b.dataset.color = i;
+    b.style.background = color;
+    b.setAttribute('aria-label', `Color ${i + 1}`);
+    b.classList.toggle('selected', i === state.color);
+    b.addEventListener('click', () => { state.color = i; buildPalette(); });
+    els.palette.append(b);
+  });
 }
 
 // ---------- main canvas ----------
@@ -89,8 +105,10 @@ function fitCanvas() {
   const r = els.stage.getBoundingClientRect();
   if (!r.width || !r.height) return;
   view.dpr = window.devicePixelRatio || 1;
-  els.hand.width = Math.round(r.width * view.dpr);
-  els.hand.height = Math.round(r.height * view.dpr);
+  const w = Math.round(r.width * view.dpr), h = Math.round(r.height * view.dpr);
+  if (w === els.hand.width && h === els.hand.height) return;
+  els.hand.width = w;
+  els.hand.height = h;
   view.scale = Math.min(r.width / LOGICAL_W, r.height / LOGICAL_H);
   view.ox = (r.width - LOGICAL_W * view.scale) / 2;
   view.oy = r.height - LOGICAL_H * view.scale; // bottom-align the hand
@@ -122,12 +140,48 @@ function render() {
   requestAnimationFrame(render);
 }
 
+// ---------- painting ----------
+function brushRadius(nail) { return nail.rect.w / 6; }
+
+function applyTool(i, p, isStart) {
+  const L = state.layers[i];
+  const nail = state.hand.nails[i];
+  const color = PALETTE[state.color];
+  const r = brushRadius(nail);
+  if (state.tool === 'brush') L.paint(p.x, p.y, color, r);
+  state.dirty = true;
+}
+
+els.hand.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  const p = toLogical(e);
+  const i = hitNail(state.hand, p.x, p.y);
+  if (i < 0) return;
+  els.hand.setPointerCapture(e.pointerId);
+  state.activeNail = i;
+  state.last = p;
+  applyTool(i, p, true);
+});
+
+els.hand.addEventListener('pointermove', e => {
+  if (state.activeNail < 0) return;
+  const p = toLogical(e);
+  const nail = state.hand.nails[state.activeNail];
+  for (const q of interpolate(state.last, p, brushRadius(nail) / 3)) applyTool(state.activeNail, q, false);
+  state.last = p;
+});
+
+const endStroke = () => { state.activeNail = -1; state.last = null; };
+els.hand.addEventListener('pointerup', endStroke);
+els.hand.addEventListener('pointercancel', endStroke);
+
 // ---------- wiring ----------
 $('btn-home').addEventListener('click', () => showScreen('shape'));
 new ResizeObserver(() => { if (state.screen === 'salon') fitCanvas(); }).observe(els.stage);
 
 buildSkins();
 buildTiles();
+buildPalette();
 showScreen('shape');
 requestAnimationFrame(render);
 
@@ -139,5 +193,17 @@ window.__salon = {
   nailCenterScreen(i) {
     const { x, y, w, h } = state.hand.nails[i].rect;
     return toScreen(x + w / 2, y + h / 2);
+  },
+  layers: () => state.layers,
+  layerAlphaAt: (i, x, y) => state.layers[i].alphaAt(x, y),
+  layerPixelAt: (i, x, y) => state.layers[i].pixelAt(x, y),
+  layerHasPaint: i => state.layers[i].hasPaint(),
+  layerLeak: i => state.layers[i].leakCount(),
+  outsidePoint(i) {
+    const n = state.hand.nails[i];
+    const b = n.bounds;
+    const candidates = [[b.minX + 2, b.minY + 2], [b.maxX - 2, b.minY + 2], [b.minX + 2, b.maxY - 2], [b.maxX - 2, b.maxY - 2]];
+    const c = candidates.find(([x, y]) => !pointInPolygon(x, y, n.points));
+    return { x: c[0], y: c[1] };
   },
 };

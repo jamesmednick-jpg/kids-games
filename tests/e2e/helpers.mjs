@@ -17,7 +17,8 @@ export async function drag(page, from, to, steps = 12) {
 }
 
 // Reads one main-canvas pixel at client coords, returns [r,g,b,a].
-export function mainPixel(page, x, y) {
+export async function mainPixel(page, x, y) {
+  await page.waitForFunction(() => window.__salon.state.frames > 0 && !window.__salon.state.dirty);
   return page.evaluate(([x, y]) => {
     const c = document.getElementById('hand');
     const r = c.getBoundingClientRect();
