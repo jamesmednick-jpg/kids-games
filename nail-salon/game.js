@@ -15,7 +15,9 @@ export const SKIN_TONES = ['#f8d9c4', '#e8b894', '#b87a4b', '#6b4226'];
 const $ = id => document.getElementById(id);
 const els = {
   shape: $('screen-shape'), salon: $('screen-salon'), skins: $('skins'), tiles: $('tiles'),
-  stage: $('stage'), hand: $('hand'), palette: $('palette'),
+  stage: $('stage'), hand: $('hand'), palette: $('palette'), tray: $('tray'),
+  toolButtons: [...document.querySelectorAll('#tools .tool[data-tool]')],
+  stickerBtn: $('tool-sticker'), clearBtn: $('tool-clear'),
 };
 
 export const state = {
@@ -28,6 +30,8 @@ const view = { scale: 1, ox: 0, oy: 0, dpr: 1 };
 // ---------- screens ----------
 function showScreen(name) {
   state.screen = name;
+  els.tray.hidden = true;
+  armClear(false);
   els.shape.hidden = name !== 'shape';
   els.salon.hidden = name !== 'salon';
 }
@@ -148,14 +152,54 @@ function applyTool(i, p, isStart) {
   const nail = state.hand.nails[i];
   const color = PALETTE[state.color];
   const r = brushRadius(nail);
-  if (state.tool === 'brush') L.paint(p.x, p.y, color, r);
+  if (state.tool === 'brush') {
+    L.paint(p.x, p.y, color, r);
+  } else if (state.tool === 'glitter') {
+    L.glitter(p.x, p.y, color, r);
+  } else if (state.tool === 'sticker' && isStart) {
+    const s = STICKERS[state.sticker];
+    if (s === '●') L.dot(p.x, p.y, color, nail.rect.w * 0.22);
+    else L.sticker(p.x, p.y, s, nail.rect.w * 0.45);
+  }
   state.dirty = true;
+}
+
+function selectTool(tool) {
+  state.tool = tool;
+  els.toolButtons.forEach(b => b.classList.toggle('selected', b.dataset.tool === tool));
+}
+
+function buildTray() {
+  els.tray.innerHTML = '';
+  STICKERS.forEach((s, i) => {
+    const b = document.createElement('button');
+    b.dataset.sticker = i;
+    b.textContent = s;
+    b.setAttribute('aria-label', `Sticker ${i + 1}`);
+    b.addEventListener('click', () => {
+      state.sticker = i;
+      els.stickerBtn.textContent = s;
+      els.tray.hidden = true;
+      selectTool('sticker');
+    });
+    els.tray.append(b);
+  });
+}
+
+function armClear(on) {
+  state.clearArmed = on;
+  els.clearBtn.classList.toggle('armed', on);
 }
 
 els.hand.addEventListener('pointerdown', e => {
   e.preventDefault();
   const p = toLogical(e);
   const i = hitNail(state.hand, p.x, p.y);
+  if (state.clearArmed) {
+    if (i >= 0) { state.layers[i].clear(); state.dirty = true; }
+    armClear(false);
+    return;
+  }
   if (i < 0) return;
   els.hand.setPointerCapture(e.pointerId);
   state.activeNail = i;
@@ -177,6 +221,14 @@ els.hand.addEventListener('pointercancel', endStroke);
 
 // ---------- wiring ----------
 $('btn-home').addEventListener('click', () => showScreen('shape'));
+els.toolButtons.forEach(b => b.addEventListener('click', () => {
+  armClear(false);
+  if (b.dataset.tool === 'sticker') els.tray.hidden = !els.tray.hidden;
+  else els.tray.hidden = true;
+  selectTool(b.dataset.tool);
+}));
+els.clearBtn.addEventListener('click', () => { els.tray.hidden = true; armClear(!state.clearArmed); });
+buildTray();
 new ResizeObserver(() => { if (state.screen === 'salon') fitCanvas(); }).observe(els.stage);
 
 buildSkins();
