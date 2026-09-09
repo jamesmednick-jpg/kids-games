@@ -1,10 +1,11 @@
 import { makeAddBag } from './blocks.js';
-import { drawBuddy, cubeSizeFor } from './render.js';
-import { say, sayAll, clunk, step, chime } from './audio.js';
+import { drawBuddy, cubeSizeFor, celebrate as dance, popFace, stars, clearFx } from './render.js';
+import { say, sayAll, clunk, step, sparkle, fanfare } from './audio.js';
 import { makeNudge } from './nudge.js';
 
 const MERGE_TOLERANCE = 0.30;   // fraction of screen width; generous on purpose
 const TAP_TOLERANCE = 12;       // px; less than this is a tap, not a drag
+const wait = ms => new Promise(r => setTimeout(r, ms));
 
 // Two buddies clunk into one and the whole tower is recounted from one — the
 // way the show does it, and the only version a five-year-old can follow.
@@ -32,17 +33,17 @@ export function mountAdd(host, { max, nudgeMs }) {
     onSpeak: () => { if (!state.merged) say('nudge-drag'); },
   });
 
+  // Draws the two buddies apart. The merged tower is drawn by merge() itself,
+  // beat by beat.
   function paint() {
-    rowEl.hidden = state.merged;
-    resultEl.hidden = !state.merged;
+    rowEl.hidden = false;
+    resultEl.hidden = true;
+    resultEl.textContent = '';
     againEl.hidden = true;
-    if (state.merged) {
-      drawBuddy(resultEl, state.a + state.b, { size });
-    } else {
-      drawBuddy(aEl, state.a, { size });
-      drawBuddy(bEl, state.b, { size });
-      aEl.style.transform = bEl.style.transform = '';
-    }
+    clearFx(host);
+    drawBuddy(aEl, state.a, { size });
+    drawBuddy(bEl, state.b, { size });
+    for (const el of [aEl, bEl]) { el.classList.remove('merging'); el.style.transform = ''; }
   }
 
   function setPair(a, b) {
@@ -57,23 +58,52 @@ export function mountAdd(host, { max, nudgeMs }) {
     setPair(a, b);
   }
 
+  // The show's signature beat, in four moves: the buddies slide into the
+  // middle and squash together; stars burst where they meet; the faceless sum
+  // is counted from one, each cube lighting up in turn; and on the last count
+  // the face pops on and the new buddy dances.
   async function merge() {
     if (state.merged) return;
     state.merged = true;
     nudge.stop();
-    clunk();
-    paint();
     const total = state.a + state.b;
+
+    // 1. together
+    const row = rowEl.getBoundingClientRect();
+    const centerX = row.left + row.width / 2;
+    for (const el of [aEl, bEl]) {
+      const r = el.getBoundingClientRect();
+      el.style.transform = `translateX(${centerX - (r.left + r.width / 2)}px)`;
+      el.classList.add('merging');
+    }
+    clunk();
+    await wait(420);
+
+    // 2. stars where they touch
+    const screen = host.getBoundingClientRect();
+    stars(host, centerX - screen.left, row.bottom - screen.top - size * 1.5);
+    sparkle();
+    await wait(160);
+
+    // 3. the sum, counted from one
+    rowEl.hidden = true;
+    resultEl.hidden = false;
+    let buddy = drawBuddy(resultEl, total, { size, faces: false });
     await say('join');
-    const cubes = [...resultEl.querySelectorAll('.cube')].reverse();   // bottom up
+    const cubes = [...buddy.querySelectorAll('.cube')].reverse();   // bottom up
     for (let k = 1; k <= total; k++) {
-      cubes[k - 1]?.classList.add('counting');
+      cubes[k - 1]?.classList.add('lit');
       step(k);
       await say(`count-${k}`);
     }
-    chime();
-    await sayAll([`is-${total}`, `cheer-${1 + Math.floor(Math.random() * 4)}`]);
+
+    // 4. alive
+    buddy = drawBuddy(resultEl, total, { size });
+    popFace(buddy);
+    dance(host, buddy, total);
+    fanfare();
     againEl.hidden = false;
+    await sayAll([`is-${total}`, `cheer-${1 + Math.floor(Math.random() * 4)}`]);
   }
 
   // Drag either buddy toward the other. Releasing anywhere near the middle
@@ -110,6 +140,6 @@ export function mountAdd(host, { max, nudgeMs }) {
   return {
     state, setPair, nextPair,
     start() { nextPair(); },
-    stop() { nudge.stop(); state.merged = false; resultEl.textContent = ''; },
+    stop() { nudge.stop(); state.merged = false; resultEl.textContent = ''; clearFx(host); },
   };
 }

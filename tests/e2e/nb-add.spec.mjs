@@ -32,7 +32,7 @@ test('both buddies and the result share one cube size', async ({ page }) => {
   const b = await page.locator('#add-b .cube').first().boundingBox();
   expect(a.width).toBeCloseTo(b.width, 0);
   await dragTogether(page);
-  await page.waitForFunction(() => window.__nb.add.state.merged);
+  await page.waitForSelector('#add-result .cube');
   const r = await page.locator('#add-result .cube').first().boundingBox();
   expect(r.width).toBeCloseTo(a.width, 0);
 });
@@ -40,7 +40,7 @@ test('both buddies and the result share one cube size', async ({ page }) => {
 test('dragging them together makes the sum', async ({ page }) => {
   await openAdd(page, 2, 3);
   await dragTogether(page);
-  await page.waitForFunction(() => window.__nb.add.state.merged);
+  await page.waitForSelector('#add-result .cube');
   expect(await page.locator('#add-result .cube').count()).toBe(5);
   await expect(page.locator('#add-result .sign')).toHaveText('5');
   await expect(page.locator('#add-a')).toBeHidden();
@@ -62,7 +62,7 @@ test('the merged tower recounts from one, not on from the first addend', async (
 test('tapping instead of dragging also merges', async ({ page }) => {
   await openAdd(page, 4, 1);
   await page.click('#add-a');
-  await page.waitForFunction(() => window.__nb.add.state.merged);
+  await page.waitForSelector('#add-result .cube');
   expect(await page.locator('#add-result .cube').count()).toBe(5);
 });
 

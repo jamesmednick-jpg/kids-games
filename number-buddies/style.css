@@ -154,3 +154,47 @@ button { font: inherit; border: 0; background: none; cursor: pointer; }
   width: 64px; height: 64px; border-radius: 50%; font-size: 30px; background: #fff; box-shadow: 0 4px 0 #d9cdb0;
 }
 #play-sweep:active { transform: translateY(3px); box-shadow: 0 1px 0 #d9cdb0; }
+
+/* ---------- celebration ---------- */
+.fx { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 6; }
+
+.confetti-piece { position: absolute; top: -20px; border-radius: 2px; opacity: 0.95; animation: confetti-fall 2.4s linear forwards; }
+@keyframes confetti-fall { to { transform: translateY(110vh) rotate(var(--spin, 360deg)); opacity: 0.9; } }
+
+.firework { position: absolute; width: 9px; height: 9px; border-radius: 50%; animation: fling 1.3s cubic-bezier(.1, .8, .3, 1) forwards; }
+.star { position: absolute; color: #ffd23f; text-shadow: 0 0 6px #fff, 0 0 12px #ffd23f; line-height: 1; animation: fling 1s ease-out forwards; }
+@keyframes fling {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy) + 60px)) scale(0.4); opacity: 0; }
+}
+
+/* The two buddies slide to the middle and squash into each other. */
+.draggable.merging { transition: transform 420ms cubic-bezier(.5, 0, .3, 1.3); }
+.draggable.merging .parts { animation: squash 420ms ease-in forwards; transform-origin: 50% 100%; }
+@keyframes squash { 0% { transform: none; } 100% { transform: scaleX(0.82) scaleY(1.06); } }
+
+/* Counting lights each cube in turn with a hop. */
+.cube.lit { animation: hop 320ms ease-out; filter: brightness(1.18); }
+@keyframes hop { 0% { transform: translateY(0); } 40% { transform: translateY(-10px) scaleY(1.06); } 100% { transform: translateY(0); } }
+
+/* The face arrives with a boing. */
+.face.pop { animation: pop 520ms cubic-bezier(.34, 1.56, .64, 1) both; transform-origin: center; }
+@keyframes pop { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+
+/* The dance. Cubes bop with a stagger so the top lags the bottom like a real stack. */
+.buddy.dance .parts { animation: sway 520ms ease-in-out 6; transform-origin: 50% 100%; }
+@keyframes sway {
+  0%, 100% { transform: rotate(0) translateY(0); }
+  25% { transform: rotate(-5deg) translateY(-8px); }
+  75% { transform: rotate(5deg) translateY(-8px); }
+}
+.buddy.dance .cube { animation: bop 520ms ease-in-out 6; animation-delay: calc(var(--i, 0) * -70ms); }
+@keyframes bop { 0%, 100% { transform: scale(1); } 50% { transform: scaleX(1.10) scaleY(0.90); } }
+.buddy.dance .sign { animation: wobble 520ms ease-in-out 6; transform-origin: 50% 100%; }
+@keyframes wobble { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-9deg); } 75% { transform: rotate(9deg); } }
+.buddy.dance .pupil { animation: look 1.04s ease-in-out 3; }
+@keyframes look { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+/* The ghost fills in with a shimmer the instant she matches it. */
+#build-target.matched .cube { opacity: 0.55; animation: shimmer 800ms ease-out; }
+@keyframes shimmer { 0% { filter: brightness(1); opacity: 0.22; } 40% { filter: brightness(1.9); opacity: 0.9; } 100% { filter: brightness(1); opacity: 0.55; } }

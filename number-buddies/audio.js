@@ -94,3 +94,10 @@ export function thunk() { tone(180, 0.11, 'triangle', 0.22); }
 export function step(k) { tone(392 * Math.pow(2, (k - 1) / 12), 0.14, 'sine', 0.16); }
 export function clunk() { tone(120, 0.18, 'square', 0.16); tone(240, 0.12, 'triangle', 0.1, 0.04); }
 export function chime() { [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(f, 0.6, 'sine', 0.18, i * 0.14)); }
+// A quick glittering run, for the moment two buddies touch.
+export function sparkle() { [880, 1108.7, 1318.5, 1760, 2217.5, 2637].forEach((f, i) => tone(f, 0.28, 'sine', 0.10, i * 0.045)); }
+// A little fanfare under the cheer.
+export function fanfare() {
+  const notes = [[523.25, 0, 0.18], [659.25, 0.12, 0.18], [783.99, 0.24, 0.18], [1046.5, 0.40, 0.22], [783.99, 0.58, 0.14], [1046.5, 0.70, 0.7]];
+  for (const [f, at, dur] of notes) { tone(f, dur, 'triangle', 0.15, at); tone(f / 2, dur, 'sine', 0.08, at); }
+}

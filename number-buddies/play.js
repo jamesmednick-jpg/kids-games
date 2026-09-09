@@ -60,6 +60,10 @@ export function mountPlay(host, { max }) {
     state.towers = state.towers.filter(t => t !== b);
     paint();
     clunk();
+    // A little hop, and that is all: Play stays calm.
+    const cubes = towerEl(a).querySelectorAll('.cube');
+    cubes.forEach(c => c.classList.add('lit'));
+    setTimeout(() => cubes.forEach(c => c.classList.remove('lit')), 450);
     say(`is-${a.n}`);
   }
 

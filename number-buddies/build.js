@@ -1,6 +1,6 @@
 import { COLORS, makeTargetBag, towerParts } from './blocks.js';
-import { drawBuddy, cubeSizeFor } from './render.js';
-import { say, sayAll, thunk, step, chime } from './audio.js';
+import { drawBuddy, cubeSizeFor, celebrate as dance, popFace, clearFx } from './render.js';
+import { say, sayAll, thunk, step, fanfare } from './audio.js';
 import { makeNudge } from './nudge.js';
 
 // She taps a cube, it lands on the tower, the count climbs. Reaching the
@@ -63,6 +63,8 @@ export function mountBuild(host, { max, nudgeMs }) {
     state.done = false;
     againEl.hidden = true;
     sourceEl.hidden = false;
+    targetEl.classList.remove('matched');
+    clearFx(host);
     paintTarget();
     paintTower();
     nudge.poke();
@@ -75,14 +77,21 @@ export function mountBuild(host, { max, nudgeMs }) {
 
   function setTarget(n) { reset(n); }
 
+  // The ghost shimmers as it is matched, the face pops on, and the buddy
+  // dances under confetti. "Again" is there from the first beat, so the
+  // celebration never holds her hostage.
   async function celebrate() {
     state.done = true;
     nudge.stop();
     sourceEl.hidden = true;
+    targetEl.classList.add('matched');
     paintTower();
-    chime();
-    await sayAll([`is-${state.target}`, `cheer-${1 + Math.floor(Math.random() * 4)}`]);
+    const buddy = towerEl.querySelector('.buddy');
+    popFace(buddy);
+    dance(host, buddy, state.target);
+    fanfare();
     againEl.hidden = false;
+    await sayAll([`is-${state.target}`, `cheer-${1 + Math.floor(Math.random() * 4)}`]);
   }
 
   async function addCube() {

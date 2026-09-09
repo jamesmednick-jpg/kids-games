@@ -16,8 +16,10 @@ const dots = (n, r, cy) => Array.from({ length: n }, (_, i) => {
 
 const eye = (cx, cy, r) =>
   `<ellipse cx="${cx}" cy="${cy}" rx="${r}" ry="${r * 1.08}" fill="#fff" stroke="${INK}" stroke-width="4"/>
-   <circle cx="${cx}" cy="${cy + r * 0.18}" r="${r * 0.42}" fill="${INK}"/>
-   <circle cx="${cx - r * 0.2}" cy="${cy - r * 0.15}" r="${r * 0.14}" fill="#fff"/>`;
+   <g class="pupil">
+     <circle cx="${cx}" cy="${cy + r * 0.18}" r="${r * 0.42}" fill="${INK}"/>
+     <circle cx="${cx - r * 0.2}" cy="${cy - r * 0.15}" r="${r * 0.14}" fill="#fff"/>
+   </g>`;
 
 const grin = (y = 66) => `<path d="M30 ${y} Q50 ${y + 20} 70 ${y}" fill="none" stroke="${INK}" stroke-width="6" stroke-linecap="round"/>`;
 
@@ -112,7 +114,7 @@ export function drawBuddy(host, n, { availableH = host.clientHeight || 520, size
       const cube = document.createElement('div');
       cube.className = 'cube';
       cube.dataset.index = pn - 1 - i;
-      cube.style.cssText = `width:${size}px;height:${size}px;background:${COLORS[pn]}`;
+      cube.style.cssText = `width:${size}px;height:${size}px;background:${COLORS[pn]};--i:${pn - 1 - i}`;
       if (faces && pi === 0 && i === pn - 1) {
         cube.innerHTML = FEATURES[pn] === 'eye' ? FACE_GRIN_ONLY : FACE_TWO_EYES;
       }
@@ -126,4 +128,93 @@ export function drawBuddy(host, n, { availableH = host.clientHeight || 520, size
   buddy.append(row);
   host.append(buddy);
   return buddy;
+}
+
+// ---------- celebration ----------
+// Build and Add earn the fireworks; Play stays calm and never calls these.
+
+const PALETTE = Object.values(COLORS).filter(c => c !== '#ffffff');
+const rand = (a, b) => a + Math.random() * (b - a);
+
+// Effects live in one overlay per screen, above the towers, never touchable.
+function fxLayer(screen) {
+  let fx = screen.querySelector('.fx');
+  if (!fx) {
+    fx = document.createElement('div');
+    fx.className = 'fx';
+    screen.append(fx);
+  }
+  return fx;
+}
+
+export function clearFx(screen) {
+  const fx = screen.querySelector('.fx');
+  if (fx) fx.textContent = '';
+}
+
+function piece(fx, cls, style, life) {
+  const el = document.createElement('i');
+  el.className = cls;
+  el.style.cssText = style;
+  fx.append(el);
+  setTimeout(() => el.remove(), life);
+  return el;
+}
+
+// Confetti is little coloured cubes, in every buddy's colour, raining down.
+export function confetti(screen, count = 40) {
+  const fx = fxLayer(screen);
+  for (let i = 0; i < count; i++) {
+    const s = rand(8, 15);
+    piece(fx, 'confetti-piece',
+      `left:${rand(0, 100)}%; width:${s}px; height:${s}px; background:${PALETTE[i % PALETTE.length]};` +
+      `animation-duration:${rand(1.8, 3)}s; animation-delay:${rand(0, 0.8)}s; --spin:${rand(-720, 720)}deg`,
+      4200);
+  }
+}
+
+// Fireworks fling outward from a point. For milestones.
+export function fireworks(screen, x, y, count = 36) {
+  const fx = fxLayer(screen);
+  for (let i = 0; i < count; i++) {
+    const angle = (i / count) * Math.PI * 2 + rand(-0.2, 0.2);
+    const dist = rand(70, 170);
+    piece(fx, 'firework',
+      `left:${x}px; top:${y}px; background:${PALETTE[i % PALETTE.length]};` +
+      `--dx:${Math.cos(angle) * dist}px; --dy:${Math.sin(angle) * dist}px; animation-delay:${rand(0, 0.15)}s`,
+      1600);
+  }
+}
+
+// Stars burst from the point where two buddies meet.
+export function stars(screen, x, y, count = 14) {
+  const fx = fxLayer(screen);
+  for (let i = 0; i < count; i++) {
+    const angle = (i / count) * Math.PI * 2;
+    const dist = rand(50, 120);
+    const el = piece(fx, 'star',
+      `left:${x}px; top:${y}px; font-size:${rand(14, 26)}px; --dx:${Math.cos(angle) * dist}px; --dy:${Math.sin(angle) * dist}px`,
+      1200);
+    el.textContent = '\u2726';
+  }
+}
+
+export const isMilestone = n => n % 5 === 0;
+
+// The face arrives with a boing.
+export function popFace(buddy) {
+  const face = buddy.querySelector('.face');
+  if (face) face.classList.add('pop');
+}
+
+// The dance: sway, bop, wobble, eyes darting — CSS does the moving. Confetti
+// for everyone, fireworks from the sign for a milestone.
+export function celebrate(screen, buddy, n) {
+  buddy.classList.add('dance');
+  confetti(screen, isMilestone(n) ? 70 : 40);
+  if (isMilestone(n)) {
+    const r = buddy.querySelector('.sign').getBoundingClientRect();
+    const s = screen.getBoundingClientRect();
+    fireworks(screen, r.left + r.width / 2 - s.left, r.top + r.height / 2 - s.top);
+  }
 }
