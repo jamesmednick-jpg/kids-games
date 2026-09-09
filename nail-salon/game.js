@@ -1,5 +1,5 @@
-import { SHAPES, LOGICAL_W, LOGICAL_H, buildHand, hitNail, interpolate, pointInPolygon } from './geometry.js';
-import { drawScene } from './render.js';
+import { SHAPES, LOGICAL_W, LOGICAL_H, buildHand, hitNail, hitNailLoose, interpolate, pointInPolygon } from './geometry.js';
+import { drawScene, drawBrush, brushHandleCenter } from './render.js';
 import { NailLayer } from './paint.js';
 import { initAudio, setMuted, pop, tinkle, chime } from './audio.js';
 
@@ -27,14 +27,15 @@ export const state = {
   tool: 'brush', color: 0, sticker: 0, activeNail: -1, last: null, clearArmed: false,
   muted: false, dirty: true, frames: 0,
   zoomNail: -1, animating: false,
+  cursor: null, // { x, y, mouse } in logical coords while a pointer is over the hand
 };
+const TAP_MARGIN = 28; // logical px of forgiveness when picking a finger
 const view = { scale: 1, ox: 0, oy: 0, dpr: 1, w: 0, h: 0 };
 let animToken = 0;
 
 // ---------- screens ----------
 function showScreen(name) {
   state.screen = name;
-  els.tray.hidden = true;
   armClear(false);
   hideParty();
   els.fallback.hidden = true;
@@ -76,8 +77,8 @@ function drawTile(canvas, shape) {
   const ctx = canvas.getContext('2d');
   ctx.scale(dpr, dpr);
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, r.width, r.height);
-  // show the finger region, logical y 40..600
-  const region = { x: 0, y: 40, w: LOGICAL_W, h: 560 };
+  // show the finger region
+  const region = { x: 0, y: 90, w: LOGICAL_W, h: 580 };
   const s = Math.min(r.width / region.w, r.height / region.h);
   ctx.translate((r.width - region.w * s) / 2, (r.height - region.h * s) / 2);
   ctx.scale(s, s);
@@ -132,17 +133,21 @@ function fitCanvas() {
 
 // Whole hand, bottom-aligned, as large as the stage allows.
 function homeView() {
-  const scale = Math.min(view.w / LOGICAL_W, view.h / LOGICAL_H);
+  const TOP = 100; // nothing is drawn above this line, so let the hand use that room
+  const scale = Math.min(view.w / LOGICAL_W, view.h / (LOGICAL_H - TOP));
   return { scale, ox: (view.w - LOGICAL_W * scale) / 2, oy: view.h - LOGICAL_H * scale };
 }
 
 // One nail filling most of the stage, with a little finger around it.
 function nailView(i) {
-  const { x, y, w, h } = state.hand.nails[i].rect;
-  const padX = w * 0.45, padY = h * 0.3;
+  const n = state.hand.nails[i];
+  const b = n.bounds;
+  const w = b.maxX - b.minX, h = b.maxY - b.minY;
+  const padX = n.rect.w * 0.45, padY = n.rect.h * 0.3;
   const rw = w + padX * 2, rh = h + padY * 2;
   const scale = Math.min(view.w / rw, view.h / rh);
-  return { scale, ox: view.w / 2 - (x + w / 2) * scale, oy: view.h / 2 - (y + h / 2) * scale };
+  const cx = (b.minX + b.maxX) / 2, cy = (b.minY + b.maxY) / 2;
+  return { scale, ox: view.w / 2 - cx * scale, oy: view.h / 2 - cy * scale };
 }
 
 function zoomTo(i, ms = 320) {
@@ -188,6 +193,10 @@ function render() {
     ctx.translate(view.ox, view.oy);
     ctx.scale(view.scale, view.scale);
     drawScene(ctx, state.hand, SKIN_TONES[state.skin], state.layers);
+    if (brushShown()) {
+      const n = state.hand.nails[state.zoomNail >= 0 ? state.zoomNail : 2];
+      drawBrush(ctx, state.cursor.x, state.cursor.y, n.rect.w, PALETTE[state.color]);
+    }
     state.frames++;
   }
   requestAnimationFrame(render);
@@ -209,7 +218,7 @@ function applyTool(i, p, isStart) {
   } else if (state.tool === 'sticker' && isStart) {
     const s = STICKERS[state.sticker];
     if (s === '●') L.dot(p.x, p.y, color, nail.rect.w * 0.22);
-    else L.sticker(p.x, p.y, s, nail.rect.w * 0.45);
+    else L.sticker(p.x, p.y, s, nail.rect.w * 0.45, nail.angle);
   }
   state.dirty = true;
 }
@@ -217,6 +226,10 @@ function applyTool(i, p, isStart) {
 function selectTool(tool) {
   state.tool = tool;
   els.toolButtons.forEach(b => b.classList.toggle('selected', b.dataset.tool === tool));
+  // the top strip: stickers while placing stickers, colors otherwise
+  els.tray.hidden = tool !== 'sticker';
+  els.palette.hidden = tool === 'sticker';
+  state.dirty = true;
 }
 
 function buildTray() {
@@ -226,10 +239,11 @@ function buildTray() {
     b.dataset.sticker = i;
     b.textContent = s;
     b.setAttribute('aria-label', `Sticker ${i + 1}`);
+    b.classList.toggle('selected', i === state.sticker);
     b.addEventListener('click', () => {
       state.sticker = i;
       els.stickerBtn.textContent = s;
-      els.tray.hidden = true;
+      buildTray();
       selectTool('sticker');
     });
     els.tray.append(b);
@@ -241,11 +255,26 @@ function armClear(on) {
   els.clearBtn.classList.toggle('armed', on);
 }
 
+// The polish brush shows while painting, or while a mouse hovers a zoomed nail.
+function brushShown() {
+  if (state.tool !== 'brush' || !state.cursor || state.screen !== 'salon') return false;
+  if (state.activeNail >= 0) return true;
+  return state.cursor.mouse && state.zoomNail >= 0 && hitNail(state.hand, state.cursor.x, state.cursor.y) === state.zoomNail;
+}
+
+function setCursor(e) {
+  const p = toLogical(e);
+  const was = brushShown();
+  state.cursor = { x: p.x, y: p.y, mouse: e.pointerType === 'mouse' };
+  if (was || brushShown()) state.dirty = true;
+}
+
 els.hand.addEventListener('pointerdown', e => {
   e.preventDefault();
   if (state.animating) return;
+  setCursor(e);
   const p = toLogical(e);
-  const i = hitNail(state.hand, p.x, p.y);
+  const i = state.zoomNail < 0 ? hitNailLoose(state.hand, p.x, p.y, TAP_MARGIN) : hitNail(state.hand, p.x, p.y);
   if (state.clearArmed) {
     if (i >= 0) { state.layers[i].clear(); state.dirty = true; }
     armClear(false);
@@ -260,6 +289,7 @@ els.hand.addEventListener('pointerdown', e => {
 });
 
 els.hand.addEventListener('pointermove', e => {
+  setCursor(e);
   if (state.activeNail < 0) return;
   const p = toLogical(e);
   const nail = state.hand.nails[state.activeNail];
@@ -267,9 +297,14 @@ els.hand.addEventListener('pointermove', e => {
   state.last = p;
 });
 
-const endStroke = () => { state.activeNail = -1; state.last = null; };
+const endStroke = e => {
+  state.activeNail = -1; state.last = null;
+  if (e && e.pointerType !== 'mouse') state.cursor = null;
+  state.dirty = true;
+};
 els.hand.addEventListener('pointerup', endStroke);
 els.hand.addEventListener('pointercancel', endStroke);
+els.hand.addEventListener('pointerleave', () => { state.cursor = null; state.dirty = true; });
 
 // ---------- celebration ----------
 function startConfetti(seconds = 3) {
@@ -308,7 +343,6 @@ function startConfetti(seconds = 3) {
 
 function showParty() {
   chime();
-  els.tray.hidden = true;
   armClear(false);
   state.activeNail = -1;
   if (state.zoomNail >= 0) zoomTo(-1);
@@ -369,11 +403,9 @@ $('btn-home').addEventListener('click', () => showScreen('shape'));
 els.backBtn.addEventListener('click', () => { if (!state.animating) zoomTo(-1); });
 els.toolButtons.forEach(b => b.addEventListener('click', () => {
   armClear(false);
-  if (b.dataset.tool === 'sticker') els.tray.hidden = !els.tray.hidden;
-  else els.tray.hidden = true;
   selectTool(b.dataset.tool);
 }));
-els.clearBtn.addEventListener('click', () => { els.tray.hidden = true; armClear(!state.clearArmed); });
+els.clearBtn.addEventListener('click', () => armClear(!state.clearArmed));
 buildTray();
 $('btn-done').addEventListener('click', showParty);
 $('btn-new').addEventListener('click', () => { hideParty(); showScreen('shape'); });
@@ -421,8 +453,14 @@ window.__salon = {
   hand: () => state.hand,
   toScreen,
   nailCenterScreen(i) {
-    const { x, y, w, h } = state.hand.nails[i].rect;
-    return toScreen(x + w / 2, y + h / 2);
+    const c = state.hand.nails[i].center;
+    return toScreen(c.x, c.y);
+  },
+  brushShown,
+  brushHandleScreen() {
+    const n = state.hand.nails[state.zoomNail >= 0 ? state.zoomNail : 2];
+    const h = brushHandleCenter(state.cursor.x, state.cursor.y, n.rect.w);
+    return toScreen(h.x, h.y);
   },
   exportPhoto,
   layers: () => state.layers,

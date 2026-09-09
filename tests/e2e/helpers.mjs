@@ -44,9 +44,9 @@ export async function zoomOut(page) {
 // Screen-space rect of nail i (client coords).
 export function nailRect(page, i) {
   return page.evaluate(i => {
-    const n = window.__salon.hand().nails[i].rect;
-    const a = window.__salon.toScreen(n.x, n.y);
-    const z = window.__salon.toScreen(n.x + n.w, n.y + n.h);
+    const b = window.__salon.hand().nails[i].bounds;
+    const a = window.__salon.toScreen(b.minX, b.minY);
+    const z = window.__salon.toScreen(b.maxX, b.maxY);
     return { x: a.x, y: a.y, w: z.x - a.x, h: z.y - a.y };
   }, i);
 }

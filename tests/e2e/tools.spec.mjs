@@ -15,18 +15,35 @@ test('glitter paints inside the nail only', async ({ page }) => {
   expect(await leak(page, 3)).toBe(0);
 });
 
-test('sticker tray opens, picks a sticker, and a tap near the edge does not leak', async ({ page }) => {
+test('sticker tool swaps the colors for stickers at the top; brush swaps them back', async ({ page }) => {
   await openSalon(page);
+  await expect(page.locator('#palette')).toBeVisible();
+  await expect(page.locator('#tray')).toBeHidden();
   await page.click('#tool-sticker');
   await expect(page.locator('#tray')).toBeVisible();
+  await expect(page.locator('#palette')).toBeHidden();
   await expect(page.locator('#tray button[data-sticker]')).toHaveCount(8);
-  await page.click('#tray button[data-sticker="1"]'); // star
+  // the strip keeps the same height so the hand does not jump
+  const trayBox = await page.locator('#tray').boundingBox();
+  await page.click('#tool-brush');
+  const palBox = await page.locator('#palette').boundingBox();
+  expect(Math.abs(trayBox.height - palBox.height)).toBeLessThan(2);
   await expect(page.locator('#tray')).toBeHidden();
+  await page.click('#tool-glitter');
+  await expect(page.locator('#palette')).toBeVisible();
+});
+
+test('picking a sticker highlights it and a tap near the edge does not leak', async ({ page }) => {
+  await openSalon(page);
+  await page.click('#tool-sticker');
+  await page.click('#tray button[data-sticker="1"]'); // star
+  await expect(page.locator('#tray')).toBeVisible();
+  await expect(page.locator('#tray button[data-sticker="1"]')).toHaveClass(/selected/);
   await expect(page.locator('#tool-sticker')).toHaveText('⭐');
   await zoomNail(page, 2);
   const edge = await page.evaluate(() => {
-    const n = window.__salon.hand().nails[2].rect;
-    return window.__salon.toScreen(n.x + n.w * 0.12, n.y + n.h * 0.5);
+    const n = window.__salon.hand().nails[2];
+    return window.__salon.toScreen(n.bounds.minX + n.rect.w * 0.12, n.center.y);
   });
   await page.mouse.click(edge.x, edge.y);
   expect(await hasPaint(page, 2)).toBe(true);
@@ -42,8 +59,8 @@ test('dragging with the sticker tool places only one sticker', async ({ page }) 
   await drag(page, { x: c.x - 8, y: c.y }, { x: c.x + 8, y: c.y }, 8);
   // the dot is placed at the start point; the end point must still be empty
   const endAlpha = await page.evaluate(() => {
-    const n = window.__salon.hand().nails[2].rect;
-    return window.__salon.layerAlphaAt(2, n.x + n.w * 0.9, n.y + n.h * 0.5);
+    const n = window.__salon.hand().nails[2];
+    return window.__salon.layerAlphaAt(2, n.bounds.maxX - n.rect.w * 0.1, n.center.y);
   });
   expect(endAlpha).toBe(0);
 });

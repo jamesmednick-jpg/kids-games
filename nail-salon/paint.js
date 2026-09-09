@@ -52,13 +52,15 @@ export class NailLayer {
     });
   }
 
-  sticker(x, y, emoji, size) {
+  sticker(x, y, emoji, size, angle = 0) {
     this._clipped(c => {
+      c.translate(x, y);
+      c.rotate(angle);
       c.font = `${size}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
       c.textAlign = 'center';
       c.textBaseline = 'middle';
       c.fillStyle = '#000';
-      c.fillText(emoji, x, y);
+      c.fillText(emoji, 0, 0);
     });
   }
 

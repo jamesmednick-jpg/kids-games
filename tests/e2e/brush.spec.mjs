@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { openSalon, nailCenter, drag, zoomNail, stageBox } from './helpers.mjs';
+import { openSalon, nailCenter, drag, zoomNail, stageBox, mainPixel } from './helpers.mjs';
 
 const hasPaint = (page, i) => page.evaluate(i => window.__salon.layerHasPaint(i), i);
 const leak = (page, i) => page.evaluate(i => window.__salon.layerLeak(i), i);
@@ -10,8 +10,8 @@ test('dragging inside a nail paints inside and not outside it', async ({ page })
   const c = await nailCenter(page, 2);
   await drag(page, { x: c.x, y: c.y - 15 }, { x: c.x, y: c.y + 15 });
   const inside = await page.evaluate(() => {
-    const n = window.__salon.hand().nails[2].rect;
-    return window.__salon.layerAlphaAt(2, n.x + n.w / 2, n.y + n.h / 2);
+    const c = window.__salon.hand().nails[2].center;
+    return window.__salon.layerAlphaAt(2, c.x, c.y);
   });
   expect(inside).toBeGreaterThan(0);
   const outside = await page.evaluate(() => {
@@ -57,10 +57,27 @@ test('the selected palette color is what gets painted', async ({ page }) => {
   const c = await nailCenter(page, 0);
   await drag(page, { x: c.x - 5, y: c.y }, { x: c.x + 5, y: c.y });
   const rgba = await page.evaluate(() => {
-    const n = window.__salon.hand().nails[0].rect;
-    return window.__salon.layerPixelAt(0, n.x + n.w / 2, n.y + n.h / 2);
+    const c = window.__salon.hand().nails[0].center;
+    return window.__salon.layerPixelAt(0, c.x, c.y);
   });
   expect(rgba[0]).toBeGreaterThan(240);
   expect(rgba[1]).toBeGreaterThan(190);
   expect(rgba[2]).toBeLessThan(60);
+});
+
+test('a little polish brush follows the fingertip while painting', async ({ page }) => {
+  await openSalon(page);
+  await zoomNail(page, 2);
+  const c = await nailCenter(page, 2);
+  await page.mouse.move(c.x, c.y);
+  await page.mouse.down();
+  await page.mouse.move(c.x + 6, c.y + 6, { steps: 3 });
+  await page.waitForFunction(() => window.__salon.brushShown() && !window.__salon.state.dirty);
+  const h = await page.evaluate(() => window.__salon.brushHandleScreen());
+  const [r, g, b] = await mainPixel(page, h.x, h.y);
+  expect(r).toBeGreaterThan(235); expect(g).toBeGreaterThan(235); expect(b).toBeGreaterThan(235); // pale handle
+  await page.mouse.up();
+  const palm = await page.evaluate(() => window.__salon.toScreen(295, 560));
+  await page.mouse.move(palm.x, palm.y);
+  await page.waitForFunction(() => !window.__salon.brushShown());
 });

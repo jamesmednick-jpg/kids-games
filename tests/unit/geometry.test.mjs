@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   SHAPES, LOGICAL_W, LOGICAL_H, nailPolygon, polygonBounds, pointInPolygon,
-  interpolate, buildHand, hitNail,
+  interpolate, buildHand, hitNail, hitNailLoose,
 } from '../../nail-salon/geometry.js';
 
 const RECT = { x: 100, y: 100, w: 60, h: 80 };
@@ -95,9 +95,33 @@ test('longer shapes extend the nail upward, not downward', () => {
 test('hitNail finds the nail under a point and -1 elsewhere', () => {
   const hand = buildHand('round');
   hand.nails.forEach((n, i) => {
-    const cx = n.rect.x + n.rect.w / 2, cy = n.rect.y + n.rect.h / 2;
-    assert.equal(hitNail(hand, cx, cy), i);
+    assert.equal(hitNail(hand, n.center.x, n.center.y), i);
   });
   assert.equal(hitNail(hand, 350, 700), -1); // palm
   assert.equal(hitNail(hand, -5, -5), -1);
+});
+
+test('nails carry an angle, pivot and global center; thumb leans left, middle is straight', () => {
+  const hand = buildHand('round');
+  const [thumb, , middle] = hand.nails;
+  assert.ok(thumb.angle < -0.4, `thumb angle ${thumb.angle}`);
+  assert.equal(middle.angle, 0);
+  for (const n of hand.nails) {
+    assert.ok(Number.isFinite(n.pivot.x) && Number.isFinite(n.pivot.y));
+    // center sits inside the polygon and inside the bounds
+    assert.ok(pointInPolygon(n.center.x, n.center.y, n.points));
+    assert.ok(n.center.x > n.bounds.minX && n.center.x < n.bounds.maxX);
+  }
+  // the thumb nail really is rotated: its polygon is wider than its local rect
+  assert.ok(thumb.bounds.maxX - thumb.bounds.minX > thumb.rect.w * 1.1);
+});
+
+test('hitNailLoose accepts taps a little outside the nail, but not far away', () => {
+  const hand = buildHand('round');
+  const m = hand.nails[2];
+  const justLeft = { x: m.bounds.minX - 15, y: m.center.y };
+  assert.equal(hitNail(hand, justLeft.x, justLeft.y), -1);
+  assert.equal(hitNailLoose(hand, justLeft.x, justLeft.y, 25), 2);
+  assert.equal(hitNailLoose(hand, 350, 700, 25), -1);
+  assert.equal(hitNailLoose(hand, m.center.x, m.bounds.maxY + 60, 25), -1); // down the finger, near nothing
 });

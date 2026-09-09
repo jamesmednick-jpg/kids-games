@@ -79,9 +79,20 @@ are decorative.
   zooms back out. Done zooms out first so the celebration shows the whole
   hand. On screens wider than a phone the game sits in a centered column
   no wider than 480 px, with swatches capped at 64 px.
-- Stickers button opens a tray above the tool row with eight stickers.
-  Tapping a sticker selects it and closes the tray; the Stickers button
-  shows the selected sticker.
+- The top strip (amended 2026-09-09) shows the 12 colors while the brush or
+  glitter tool is active and the 8 stickers while the sticker tool is
+  active; both strips are the same height so the hand never jumps. The
+  selected sticker is highlighted and the Stickers button shows it.
+- Hand (amended 2026-09-09): slim tapered fingers with rounded tips, gently
+  splayed, a thumb leaning out about 38 degrees with its nail rotated to
+  match, soft side shading and faint knuckle creases, one outline around the
+  whole silhouette. In the whole-hand view a tap within 28 logical px of a
+  nail counts as that nail.
+- Brush cursor (amended 2026-09-09): while the brush tool paints, a small
+  polish brush (bristles in the current color, pale handle tilted up-right)
+  is drawn at the touch point. With a mouse it also follows the pointer
+  over the zoomed nail. Every tappable control must lie fully inside the
+  viewport on any phone size, including Safari with its toolbars showing.
 
 ### 3. Celebration
 
