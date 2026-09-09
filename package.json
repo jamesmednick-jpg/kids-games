@@ -8,7 +8,8 @@
     "test": "npm run test:unit && npm run test:e2e",
     "serve": "node tools/serve.mjs",
     "icons": "node tools/make-icons.mjs",
-    "publish": "node tools/publish.mjs"
+    "publish": "node tools/publish.mjs",
+    "voice": "node tools/make-voice.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0"
