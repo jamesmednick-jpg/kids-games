@@ -70,26 +70,57 @@ clipped to nail outlines; this game has no such need.
 
 ## The blocks
 
-A number N is a vertical tower of N cubes in that number's colour. The top
-cube carries a face: two googly eyes and a grin. The rest are plain cubes
-with a subtle top highlight and a darker bottom edge so the stack reads as
-three-dimensional.
+A number N is a vertical tower of N cubes in that number's colour, with a
+face on the top cube and a round white numeral sign above it.
 
-Colours, 1 to 10 — original palette, chosen for contrast against the
-background and against each other:
+Art direction comes from wooden stacking toys: flat face-on squares, softly
+rounded corners, matte colour with a faint grain, and shading limited to a
+soft inner highlight at the top of each cube and a slightly darker band at
+the bottom. Cubes are drawn straight on, not in isometric perspective.
+Gaps between cubes in a tower are visible but small, so the tower reads as
+separate countable cubes rather than one painted column.
 
-| N | Colour | Hex |
-|---|--------|-----|
-| 1 | red | `#e63946` |
-| 2 | orange | `#f4802b` |
-| 3 | yellow | `#ffd23f` |
-| 4 | green | `#43aa5a` |
-| 5 | blue | `#3b82d6` |
-| 6 | violet | `#8b5cf6` |
-| 7 | sky | `#38bdf8` |
-| 8 | pink | `#ec4899` |
-| 9 | teal | `#14b8a6` |
-| 10 | white with a rainbow band | `#ffffff` |
+### The numeral sign
+
+A white circle on a short stalk sits centred above every tower, carrying the
+number in chunky near-black type. The circle overlaps the top cube slightly,
+as if planted in it.
+
+The sign is drawn at a **fixed size regardless of tower height or cube
+size** — a One and a Ten carry the same sign. It is the most important thing
+on screen and must never shrink with the art. (Nail Salon hit exactly this
+bug with ring previews; see commit `042fdf0`.)
+
+### Faces and signature features
+
+The top cube carries a face: eyes and a wide grin, cartoon-simple.
+
+Beyond the face, each buddy wears **N of its own decoration**, spread across
+the cubes of the tower. The decoration is itself countable, so the character
+design reinforces the number — she can count Three's freckles.
+
+| N | Colour | Hex | Signature feature |
+|---|--------|-----|-------------------|
+| 1 | red | `#e63946` | one big eye, centred — a cyclops |
+| 2 | orange | `#f4802b` | two bobble antennae |
+| 3 | yellow | `#ffd23f` | three freckles |
+| 4 | green | `#43aa5a` | a four-petal flower |
+| 5 | blue | `#3b82d6` | one five-pointed star |
+| 6 | violet | `#8b5cf6` | six ladybird spots |
+| 7 | sky | `#38bdf8` | seven sparkles |
+| 8 | pink | `#ec4899` | eight little arms |
+| 9 | teal | `#14b8a6` | a nine-petal flower |
+| 10 | white | `#ffffff` | ten stripes in a rainbow band |
+
+Features are defined as small inline SVG shapes in `render.js`, one function
+per buddy, taking the tower geometry and returning the decoration positions.
+Every feature must be positioned relative to the tower's cubes so it scales
+with them.
+
+Above ten there are no new features. A number renders as a ten-tower plus a
+remainder tower, and each part wears its own — thirteen is Ten's rainbow
+stripes standing beside Three's freckles. The numeral sign shows `13` once,
+above the pair.
 
 ### Sizing
 
