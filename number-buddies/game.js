@@ -27,6 +27,10 @@ export function go(name) {
   state.screen = name;
   for (const s of SCREENS) $(`screen-${s}`).hidden = s !== name;
   $('btn-home').hidden = name === 'home';
+  if (name !== 'home') {
+    const el = $(`screen-${name}`);
+    el.classList.remove('enter'); void el.offsetWidth; el.classList.add('enter');
+  }
   if (name === 'build') build.start();
   if (name === 'add') add.start();
   if (name === 'play') play.start();

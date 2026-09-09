@@ -1,4 +1,7 @@
 import { sparks } from './render.js';
+import { say, glint } from './audio.js';
+
+let lastGiggle = -Infinity;
 
 // Picking a buddy up. The held buddy lifts, leans into the direction it is
 // being dragged, trails sparkles, and wobbles as it settles when let go.
@@ -15,6 +18,9 @@ export function makeHold(screen) {
       el.classList.remove('settle');
       el.classList.add('held');
       setLean(0);
+      // A giggle on the way up, but not on every single grab.
+      const now = performance.now();
+      if (now - lastGiggle > 1800) { say(`pickup-${1 + Math.floor(Math.random() * 3)}`); lastGiggle = now; }
       // Lean fades back toward upright when the drag pauses.
       clearInterval(decay);
       decay = setInterval(() => { if (cur) setLean(cur.lean * 0.8); }, 60);
@@ -23,11 +29,12 @@ export function makeHold(screen) {
       if (!cur) return;
       const now = performance.now();
       const vx = (e.clientX - cur.lastX) / Math.max(1, now - cur.lastT);   // px per ms
-      setLean(Math.max(-14, Math.min(14, cur.lean * 0.5 + vx * 22)));
+      setLean(Math.max(-26, Math.min(26, cur.lean * 0.5 + vx * 36)));
       cur.lastX = e.clientX; cur.lastT = now;
-      if (now - cur.lastSpark > 60) {
+      if (now - cur.lastSpark > 40) {
         const s = screen.getBoundingClientRect();
-        sparks(screen, e.clientX - s.left, e.clientY - s.top, 3, 16);
+        sparks(screen, e.clientX - s.left, e.clientY - s.top, 5, 24);
+        if (Math.abs(vx) > 0.2 && Math.random() < 0.35) glint();
         cur.lastSpark = now;
       }
     },

@@ -61,8 +61,8 @@ export function mountAdd(host, { max, nudgeMs }) {
       const a = aEl.getBoundingClientRect(), b = bEl.getBoundingClientRect(), s = host.getBoundingClientRect();
       const midX = (a.left + a.width / 2 + b.left + b.width / 2) / 2 - s.left;
       const y = Math.max(a.bottom, b.bottom) - s.top - size;
-      sparks(host, midX, y, 3, 26);
-    }, 110);
+      sparks(host, midX, y, 5, 34);
+    }, 70);
   }
 
   function setPair(a, b) {
@@ -114,8 +114,8 @@ export function mountAdd(host, { max, nudgeMs }) {
     const glitter = setInterval(() => {
       const r = buddy.getBoundingClientRect();
       sparks(host, r.left + r.width / 2 - screen.left + (Math.random() - 0.5) * r.width * 1.6,
-        r.top - screen.top + Math.random() * r.height, 2, 8);
-    }, 90);
+        r.top - screen.top + Math.random() * r.height, 3, 10);
+    }, 55);
     await say('join');
     const cubes = [...buddy.querySelectorAll('.cube')].reverse();   // bottom up
     for (let k = 1; k <= total; k++) {
@@ -123,7 +123,7 @@ export function mountAdd(host, { max, nudgeMs }) {
       if (cube) {
         cube.classList.add('lit');
         const r = cube.getBoundingClientRect();
-        sparks(host, r.left + r.width / 2 - screen.left, r.top + r.height / 2 - screen.top, 6, size * 0.6);
+        sparks(host, r.left + r.width / 2 - screen.left, r.top + r.height / 2 - screen.top, 12, size * 0.8);
       }
       ding(k);
       await say(`count-${k}`);

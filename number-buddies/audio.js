@@ -110,6 +110,8 @@ function slide(f0, f1, dur, type = 'sine', gain = 0.18, when = 0) {
 }
 
 export function thunk() { tone(180, 0.11, 'triangle', 0.22); }
+// A single glint of the sparkle trail.
+export function glint() { tone(2200 + Math.random() * 1800, 0.09, 'sine', 0.035); }
 // A cube landing.
 export function boing() { slide(420, 160, 0.16, 'triangle', 0.2); }
 // A cube igniting during a count, brighter each time.

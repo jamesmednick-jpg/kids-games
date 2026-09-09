@@ -115,7 +115,9 @@ export function mountBuild(host, { max, nudgeMs }) {
     paintTower();
     boing();
     const r = landing.getBoundingClientRect(), h = host.getBoundingClientRect();
-    sparks(host, r.left + r.width / 2 - h.left, r.top + r.height / 2 - h.top, 7, size * 0.5);
+    sparks(host, r.left + r.width / 2 - h.left, r.top + r.height / 2 - h.top, 14, size * 0.7);
+    // The whole tower takes the impact.
+    towerEl.classList.remove('bump'); void towerEl.offsetWidth; towerEl.classList.add('bump');
     if (state.height <= state.target) {
       step(state.height);
       await say(`count-${state.height}`);

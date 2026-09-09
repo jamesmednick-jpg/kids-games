@@ -28,7 +28,11 @@ async function draw(page, n, availableH = 520, sizeFor = null) {
   }, [n, availableH, sizeFor]);
 }
 
-test.beforeEach(async ({ page }) => { await page.goto('/number-buddies/index.html'); });
+test.beforeEach(async ({ page }) => {
+  await page.goto('/number-buddies/index.html');
+  // These tests measure geometry; hold the buddies still while we do.
+  await page.addStyleTag({ content: '.buddy * { animation: none !important; }' });
+});
 
 test('a buddy has exactly N cubes', async ({ page }) => {
   for (const n of [1, 2, 5, 7, 10]) {

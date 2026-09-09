@@ -184,11 +184,11 @@ export function confetti(screen, count = 40) {
 }
 
 // Fireworks fling outward from a point. For milestones.
-export function fireworks(screen, x, y, count = 36) {
+export function fireworks(screen, x, y, count = 64) {
   const fx = fxLayer(screen);
   for (let i = 0; i < count; i++) {
     const angle = (i / count) * Math.PI * 2 + rand(-0.2, 0.2);
-    const dist = rand(70, 170);
+    const dist = rand(80, 230);
     piece(fx, 'firework',
       `left:${x}px; top:${y}px; background:${PALETTE[i % PALETTE.length]};` +
       `--dx:${Math.cos(angle) * dist}px; --dy:${Math.sin(angle) * dist}px; animation-delay:${rand(0, 0.15)}s`,
@@ -197,7 +197,7 @@ export function fireworks(screen, x, y, count = 36) {
 }
 
 // Stars burst from the point where two buddies meet.
-export function stars(screen, x, y, count = 14) {
+export function stars(screen, x, y, count = 22) {
   const fx = fxLayer(screen);
   for (let i = 0; i < count; i++) {
     const angle = (i / count) * Math.PI * 2;
@@ -221,7 +221,7 @@ export function popFace(buddy) {
 // for everyone, fireworks from the sign for a milestone.
 export function celebrate(screen, buddy, n) {
   buddy.classList.add('dance');
-  confetti(screen, isMilestone(n) ? 70 : 40);
+  confetti(screen, isMilestone(n) ? 130 : 80);
   if (isMilestone(n)) {
     const r = buddy.querySelector('.sign').getBoundingClientRect();
     const s = screen.getBoundingClientRect();
@@ -274,8 +274,8 @@ export function flyCube(screen, from, to, color, size) {
   const x1 = to.left - s.left, y1 = to.top - s.top;
   const anim = el.animate([
     { transform: `translate(${x0}px, ${y0}px) scale(0.9) rotate(0deg)` },
-    { transform: `translate(${(x0 + x1) / 2}px, ${Math.min(y0, y1) - 60}px) scale(1.05) rotate(180deg)`, offset: 0.55 },
+    { transform: `translate(${(x0 + x1) / 2}px, ${Math.min(y0, y1) - 110}px) scale(1.12) rotate(180deg)`, offset: 0.5 },
     { transform: `translate(${x1}px, ${y1}px) scale(1) rotate(360deg)` },
-  ], { duration: 260, easing: 'cubic-bezier(.3, .1, .6, 1)', fill: 'forwards' });
+  ], { duration: 330, easing: 'cubic-bezier(.3, .1, .6, 1)', fill: 'forwards' });
   return anim.finished.then(() => el.remove()).catch(() => el.remove());
 }

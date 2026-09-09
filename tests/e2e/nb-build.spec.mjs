@@ -40,6 +40,7 @@ test('each tap adds one cube and counts it aloud', async ({ page }) => {
 test('her tower and the ghost use the same cube size', async ({ page }) => {
   await openBuild(page, 7);
   await tap(page);
+  await page.waitForTimeout(450);   // let the landing squash finish before measuring
   const ghost = await page.locator('#build-target .cube').first().boundingBox();
   const hers = await page.locator('#build-tower .cube').first().boundingBox();
   expect(hers.width).toBeCloseTo(ghost.width, 0);

@@ -92,6 +92,25 @@ test('again offers a new pair within the maximum', async ({ page }) => {
   expect(a + b).toBeLessThanOrEqual(max);
 });
 
+test('a Ten never ends up with a cube under the again button', async ({ page }) => {
+  await openAdd(page, 5, 5);
+  await page.click('#add-a');
+  await page.waitForSelector('#add-again:not([hidden])');
+  // What matters: a tap in the middle of "again" reaches the button, not a cube.
+  const hit = await page.evaluate(() => {
+    const b = document.getElementById('add-again');
+    const r = b.getBoundingClientRect();
+    const el = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+    return el === b || b.contains(el);
+  });
+  expect(hit).toBeTruthy();
+  const again = await page.locator('#add-again').boundingBox();
+  const bottom = await page.locator('#add-result .cube').last().boundingBox();
+  expect(bottom.y + bottom.height).toBeLessThanOrEqual(again.y + 12);   // the dance dips a corner a few px
+  await page.click('#add-again');
+  await page.waitForFunction(() => !window.__nb.add.state.merged);
+});
+
 test('pairs always sum within the maximum across many draws', async ({ page }) => {
   await openAdd(page);
   for (let i = 0; i < 25; i++) {
@@ -125,7 +144,7 @@ test('a longer pause asks her to push them together', async ({ page }) => {
 
 test('merging stops the nudge', async ({ page }) => {
   await openAddFast(page, 400);
-  await page.click('#add-a');
+  await page.click('#add-a', { force: true });   // it may already be glowing, which Playwright counts as unstable
   await page.waitForFunction(() => window.__nb.add.state.merged);
   await page.evaluate(() => { window.__nb.spoken.length = 0; });
   await page.waitForTimeout(1200);

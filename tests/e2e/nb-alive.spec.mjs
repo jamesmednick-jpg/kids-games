@@ -59,6 +59,7 @@ test('a held buddy lifts, leans into the drag, trails sparkles, and settles when
   await page.mouse.move(from.x, from.y);
   await page.mouse.down();
   await expect(page.locator('#add-a.held')).toHaveCount(1);
+  expect((await page.evaluate(() => window.__nb.spoken)).some(id => id.startsWith('pickup-'))).toBeTruthy();
   for (let i = 1; i <= 6; i++) { await page.mouse.move(from.x + i * 12, from.y, { steps: 1 }); await page.waitForTimeout(16); }
   const lean = await page.locator('#add-a').evaluate(el => parseFloat(el.style.getPropertyValue('--lean')));
   expect(lean).toBeGreaterThan(0);

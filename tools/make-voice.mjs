@@ -61,6 +61,9 @@ export function buildPhrases(max) {
   }
 
   out.push(narrated('join', `Let's count them all!`));
+  // Being picked up.
+  ['Wheee!', 'Hee hee hee!', 'Up we go!'].forEach((text, i) =>
+    out.push(narrated(`pickup-${i + 1}`, `[[emph +]] ${text}`, { pbas: NARRATOR.pbas + 8, rate: NARRATOR.rate + 20 })));
   out.push(narrated('nudge-tap', 'Tap another block!'));
   out.push(narrated('nudge-drag', 'Push them together!'));
   out.push(narrated('mode-build', 'Build!'));
