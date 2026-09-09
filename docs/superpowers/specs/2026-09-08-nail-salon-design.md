@@ -47,7 +47,7 @@ per game (emoji icon plus name).
 
 ## Screens
 
-All screens are portrait, full width, big touch targets (minimum 64 px),
+All screens are portrait, full width, big touch targets (minimum 56 px),
 no text the child must read to proceed. Icons carry meaning; short labels
 are decorative.
 
@@ -64,11 +64,14 @@ are decorative.
 - A single left hand fills most of the screen, nails already drawn in the
   chosen shape on the chosen skin tone. Nails have a natural pale base and
   a subtle static shine highlight drawn on top of everything.
-- Right edge: a vertical palette of 12 color swatches. The selected swatch
-  is larger with a white ring.
+- Top: a palette of 12 color swatches in two rows of six. The selected
+  swatch has a white ring and is slightly enlarged. (Amended from a
+  right-edge column: two rows across the top leaves the hand about 50
+  percent larger on a phone screen.)
 - Bottom: tool row with five buttons: Brush, Glitter, Stickers, Clear nail,
   Done (checkmark).
-- Top left: Home (back to shape picker). Top right: mute toggle.
+- Over the hand: Home (top left, back to shape picker) and mute toggle
+  (top right).
 - Stickers button opens a tray above the tool row with eight stickers.
   Tapping a sticker selects it and closes the tray; the Stickers button
   shows the selected sticker.
@@ -156,7 +159,7 @@ without touching logic:
     nail 2.
   - Placing a sticker near a nail edge leaves no pixels outside the nail.
   - Clear nail restores that nail to its base pixels and leaves others alone.
-  - Every button's bounding box is at least 64 by 64 px.
+  - Every visible button's bounding box is at least 56 by 56 px.
   - Done shows the celebration; Photo produces a PNG blob of the expected size.
   - The launcher lists the nail salon tile and it links to the game.
 - Geometry helpers (point-in-path per nail, stroke interpolation) are pure
