@@ -1,5 +1,6 @@
 import { MAX_SUPPORTED } from './blocks.js';
 import { initAudio, setMuted, say } from './audio.js';
+import { mountBuild } from './build.js';
 
 // ===== Parent config: edit these freely =====
 export const MAX_NUMBER = 10;        // 10 or 20
@@ -17,9 +18,11 @@ const SCREENS = ['home', 'build', 'add', 'play'];
 export const state = { screen: 'home', muted: false };
 
 export function go(name) {
+  if (state.screen === 'build' && name !== 'build') build.stop();
   state.screen = name;
   for (const s of SCREENS) $(`screen-${s}`).hidden = s !== name;
   $('btn-home').hidden = name === 'home';
+  if (name === 'build') build.start();
 }
 
 for (const btn of document.querySelectorAll('[data-mode]')) {
@@ -35,6 +38,12 @@ $('btn-mute').addEventListener('click', () => {
   setMuted(state.muted);
   $('btn-mute').textContent = state.muted ? '🔇' : '🔊';
 });
+
+// Tests shorten the idle delay with ?nudge=250 rather than waiting eight seconds.
+const nudgeMs = Number(new URLSearchParams(location.search).get('nudge')) || IDLE_NUDGE_MS;
+
+const build = mountBuild($('screen-build'), { max: MAX_NUMBER, nudgeMs });
+Object.assign(window.__nb, { build, nudgeMs });
 
 go('home');
 

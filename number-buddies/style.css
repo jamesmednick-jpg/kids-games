@@ -80,3 +80,38 @@ button { font: inherit; border: 0; background: none; cursor: pointer; }
   width: 12px; height: 18px; background: #fff; border-radius: 3px; z-index: -1;
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.12);
 }
+
+/* ---------- build ---------- */
+#screen-build { display: grid; grid-template-rows: 1fr auto; padding: 84px 12px 24px; gap: 8px; }
+.stacks { display: grid; grid-template-columns: 1fr 1fr; align-items: end; min-height: 0; overflow: visible; }
+.slot { display: grid; place-items: end center; height: 100%; min-height: 0; }
+#build-target.ghost .cube { opacity: 0.22; box-shadow: none; }
+#build-target.ghost .cube::after { display: none; }
+#build-target.ghost .sign { opacity: 0.45; }
+#build-target.ghost .feature-holder { display: none; }
+
+#build-source {
+  justify-self: center; width: 92px; height: 92px; border-radius: 12%;
+  background: #8d6e52;
+  box-shadow: 0 0 0 1.5px rgba(58,44,34,0.10), 0 6px 0 rgba(58,44,34,0.28),
+    inset 0 6px 0 rgba(255,255,255,0.30), inset 0 -7px 0 rgba(0,0,0,0.14);
+  transition: background 200ms ease;
+}
+#build-source:active { transform: translateY(4px); box-shadow: 0 0 0 1.5px rgba(58,44,34,0.10), 0 2px 0 rgba(58,44,34,0.28), inset 0 6px 0 rgba(255,255,255,0.30), inset 0 -7px 0 rgba(0,0,0,0.14); }
+
+.cube[data-extra] { animation: jiggle 700ms ease-in-out infinite; outline: 4px dashed rgba(58,44,34,0.5); outline-offset: 3px; }
+@keyframes jiggle { 0%,100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+
+#build-again {
+  justify-self: center; width: 92px; height: 92px; border-radius: 50%; font-size: 44px;
+  background: #fff; box-shadow: 0 4px 0 #d9cdb0;
+}
+#build-again:active { transform: translateY(3px); box-shadow: 0 1px 0 #d9cdb0; }
+
+/* Whatever she should touch next. */
+.hint { animation: hint 900ms ease-in-out infinite; }
+@keyframes hint {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.09); filter: brightness(1.22); }
+}
+#build-source.hint:active { animation: none; }

@@ -42,8 +42,7 @@ async function buffer(id) {
   return buf;
 }
 
-export async function say(id) {
-  spoken.push(id);
+async function play(id) {
   if (!clips || !clips[id]) { console.warn('no such clip:', id); return; }
   if (!ctx || muted) return;
   try {
@@ -56,8 +55,21 @@ export async function say(id) {
   }
 }
 
-export async function sayAll(ids) {
-  for (const id of ids) await say(id);
+// Clips queue up and play one after another. When she taps five times fast
+// she hears "one, two, three, four, five", not five voices at once.
+let queue = Promise.resolve();
+export function say(id) {
+  spoken.push(id);
+  const turn = queue.then(() => play(id));
+  queue = turn.catch(() => {});
+  return turn;
+}
+
+// Enqueues every clip at once, in order; resolves when the last has played.
+export function sayAll(ids) {
+  let last = Promise.resolve();
+  for (const id of ids) last = say(id);
+  return last;
 }
 
 function tone(freq, dur, type = 'sine', gain = 0.2, when = 0) {
