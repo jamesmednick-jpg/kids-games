@@ -51,6 +51,7 @@ button:active { transform: translateY(2px); box-shadow: 0 1px 0 #e8a2b8; }
   pointer-events: none;
 }
 #party[hidden], #fallback[hidden] { display: none; }
+#screen-salon.partying #tools, #screen-salon.partying #tray { visibility: hidden; }
 #party .tada { font-size: 96px; animation: pop 0.6s ease-out; }
 @keyframes pop { from { transform: scale(0.2); } 60% { transform: scale(1.2); } to { transform: scale(1); } }
 #party .row, #fallback button { pointer-events: auto; }

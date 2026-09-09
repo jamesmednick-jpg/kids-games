@@ -265,11 +265,13 @@ function showParty() {
   armClear(false);
   state.activeNail = -1;
   els.party.hidden = false;
+  els.salon.classList.add('partying');
   startConfetti(3);
 }
 
 function hideParty() {
   els.party.hidden = true;
+  els.salon.classList.remove('partying');
   els.confetti.hidden = true;
 }
 
