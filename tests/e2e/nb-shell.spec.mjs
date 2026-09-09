@@ -94,3 +94,8 @@ test('every voice clip in the manifest is actually served', async ({ request }) 
   expect(r.ok()).toBeTruthy();
   expect(r.headers()['content-type']).toBe('audio/mp4');
 });
+
+test('the home screen shows which version is running', async ({ page }) => {
+  await page.goto('/number-buddies/index.html');
+  await expect(page.locator('#version')).toHaveText(/^v(\d+|\?)$/, { timeout: 5000 });
+});

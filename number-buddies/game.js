@@ -97,4 +97,16 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
 
+// A tiny version number on the home screen, read from the offline cache that
+// is actually serving this copy — so "which version is the phone on?" has an
+// answer.
+async function showVersion() {
+  try {
+    const keys = 'caches' in window ? await caches.keys() : [];
+    const mine = keys.filter(k => k.startsWith('number-buddies-v')).sort().pop();
+    $('version').textContent = mine ? mine.replace('number-buddies-', '') : 'v?';
+  } catch { $('version').textContent = 'v?'; }
+}
+showVersion();
+
 window.__nb = Object.assign(window.__nb || {}, { state, go, settings: { MAX_NUMBER, IDLE_NUDGE_MS, CHATTINESS } });
