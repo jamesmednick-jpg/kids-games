@@ -75,12 +75,19 @@ function featurePlacement(pn, size) {
   return { top: 0, scale: 0.8 };
 }
 
-// Builds a buddy into host and returns it. Clears whatever was there.
-export function drawBuddy(host, n, { availableH = host.clientHeight || 520, faces = true } = {}) {
+// One cube size for a whole scene, worked out from the tallest buddy that can
+// appear in it. Every buddy on screen must share it: Ten is exactly one cube
+// taller than Nine, and that is the entire point of the blocks.
+export function cubeSizeFor(availableH, tallestN) {
+  return cubeSize(availableH - SIGN_SIZE, Math.max(...towerParts(tallestN)), { gap: GAP });
+}
+
+// Builds a buddy into host and returns it. Clears whatever was there. Pass
+// `size` (from cubeSizeFor) whenever more than one buddy shares a screen.
+export function drawBuddy(host, n, { availableH = host.clientHeight || 520, size = null, faces = true } = {}) {
   host.textContent = '';
   const parts = towerParts(n);
-  const tallest = Math.max(...parts);
-  const size = cubeSize(availableH - SIGN_SIZE, tallest, { gap: GAP });
+  size = size || cubeSizeFor(availableH, n);
 
   const buddy = document.createElement('div');
   buddy.className = 'buddy';
