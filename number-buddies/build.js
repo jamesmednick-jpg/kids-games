@@ -1,6 +1,6 @@
 import { COLORS, makeTargetBag, towerParts } from './blocks.js';
-import { drawBuddy, cubeSizeFor, celebrate as dance, popFace, clearFx } from './render.js';
-import { say, sayAll, thunk, step, fanfare } from './audio.js';
+import { drawBuddy, cubeSizeFor, celebrate as dance, popFace, clearFx, flyCube, sparks } from './render.js';
+import { say, sayAll, thunk, step, fanfare, boing } from './audio.js';
 import { makeNudge } from './nudge.js';
 
 // She taps a cube, it lands on the tower, the count climbs. Reaching the
@@ -17,6 +17,7 @@ export function mountBuild(host, { max, nudgeMs }) {
   const state = { target: 0, height: 0, done: false };
   const OVERSHOOT = 2;          // how far past the target she can go; clips exist this far
   let size = 0;                 // one cube size for the whole screen, from the tallest buddy
+  let inFlight = 0;             // cubes still on their way up to the tower
 
   const nudge = makeNudge({
     delay: nudgeMs,
@@ -47,8 +48,11 @@ export function mountBuild(host, { max, nudgeMs }) {
         if (cube.dataset.extra) removeCube();
       });
     });
+    // Cubes still flying are drawn, so the tower has its final shape, but
+    // stay invisible until they land.
+    [...buddy.querySelectorAll('.cube')].slice(0, inFlight).forEach(c => { c.style.visibility = 'hidden'; });
     const top = buddy.querySelector('.cube');
-    if (top) top.dataset.landing = '1';
+    if (top && !inFlight) top.dataset.landing = '1';
   }
 
   function paintTarget() {
@@ -58,6 +62,7 @@ export function mountBuild(host, { max, nudgeMs }) {
 
   function reset(target) {
     size = cubeSizeFor(targetEl.parentElement.clientHeight || 420, max);
+    inFlight = 0;
     state.target = target;
     state.height = 0;
     state.done = false;
@@ -94,13 +99,23 @@ export function mountBuild(host, { max, nudgeMs }) {
     await sayAll([`is-${state.target}`, `cheer-${1 + Math.floor(Math.random() * 4)}`]);
   }
 
+  // The cube flies from the button up onto the tower, lands with a squash
+  // and a puff of sparkles, and only then gets counted.
   async function addCube() {
     if (state.done) return;
     if (state.height >= state.target + OVERSHOOT) { thunk(); return; }
     nudge.poke();
     state.height += 1;
+    inFlight += 1;
     paintTower();
-    thunk();
+    const cubes = towerEl.querySelectorAll('.cube');
+    const landing = cubes[inFlight - 1];
+    await flyCube(host, sourceEl.getBoundingClientRect(), landing.getBoundingClientRect(), landing.style.background, size);
+    inFlight -= 1;
+    paintTower();
+    boing();
+    const r = landing.getBoundingClientRect(), h = host.getBoundingClientRect();
+    sparks(host, r.left + r.width / 2 - h.left, r.top + r.height / 2 - h.top, 7, size * 0.5);
     if (state.height <= state.target) {
       step(state.height);
       await say(`count-${state.height}`);

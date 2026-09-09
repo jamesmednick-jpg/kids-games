@@ -90,7 +90,30 @@ function tone(freq, dur, type = 'sine', gain = 0.2, when = 0) {
   }
 }
 
+function slide(f0, f1, dur, type = 'sine', gain = 0.18, when = 0) {
+  if (!ctx || muted) return;
+  try {
+    const t = ctx.currentTime + when;
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(f0, t);
+    o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    g.gain.setValueAtTime(gain, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(g).connect(ctx.destination);
+    o.start(t);
+    o.stop(t + dur);
+  } catch (err) {
+    console.warn('slide failed', err);
+  }
+}
+
 export function thunk() { tone(180, 0.11, 'triangle', 0.22); }
+// A cube landing.
+export function boing() { slide(420, 160, 0.16, 'triangle', 0.2); }
+// A cube igniting during a count, brighter each time.
+export function ding(k) { const f = 1046.5 * Math.pow(2, (k - 1) / 12); tone(f, 0.22, 'sine', 0.12); tone(f * 2, 0.12, 'sine', 0.04, 0.01); }
 export function step(k) { tone(392 * Math.pow(2, (k - 1) / 12), 0.14, 'sine', 0.16); }
 export function clunk() { tone(120, 0.18, 'square', 0.16); tone(240, 0.12, 'triangle', 0.1, 0.04); }
 export function chime() { [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(f, 0.6, 'sine', 0.18, i * 0.14)); }

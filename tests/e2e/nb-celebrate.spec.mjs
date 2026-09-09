@@ -21,7 +21,7 @@ async function openAdd(page, a, b) {
 
 test('completing a buddy in Build makes it dance under confetti', async ({ page }) => {
   await openBuild(page, 3);
-  for (let k = 0; k < 3; k++) { await page.click('#build-source'); await page.waitForTimeout(100); }
+  for (let k = 0; k < 3; k++) { await page.click('#build-source', { force: true }); await page.waitForFunction(() => !document.querySelector('#screen-build .flying')); await page.waitForTimeout(40); }
   await page.waitForFunction(() => window.__nb.build.state.done);
   await expect(page.locator('#build-tower .buddy.dance')).toHaveCount(1);
   expect(await page.locator('#screen-build .confetti-piece').count()).toBeGreaterThan(10);
@@ -31,14 +31,14 @@ test('completing a buddy in Build makes it dance under confetti', async ({ page 
 
 test('a milestone in Build gets fireworks on top', async ({ page }) => {
   await openBuild(page, 5);
-  for (let k = 0; k < 5; k++) { await page.click('#build-source'); await page.waitForTimeout(100); }
+  for (let k = 0; k < 5; k++) { await page.click('#build-source', { force: true }); await page.waitForFunction(() => !document.querySelector('#screen-build .flying')); await page.waitForTimeout(40); }
   await page.waitForFunction(() => window.__nb.build.state.done);
   expect(await page.locator('#screen-build .firework').count()).toBeGreaterThan(10);
 });
 
 test('again is available as soon as the dance starts', async ({ page }) => {
   await openBuild(page, 2);
-  for (let k = 0; k < 2; k++) { await page.click('#build-source'); await page.waitForTimeout(100); }
+  for (let k = 0; k < 2; k++) { await page.click('#build-source', { force: true }); await page.waitForFunction(() => !document.querySelector('#screen-build .flying')); await page.waitForTimeout(40); }
   await page.waitForFunction(() => window.__nb.build.state.done);
   await expect(page.locator('#build-again')).toBeVisible({ timeout: 1500 });
   await page.click('#build-again');
@@ -49,7 +49,7 @@ test('again is available as soon as the dance starts', async ({ page }) => {
 
 test('the confetti is gone within a few seconds', async ({ page }) => {
   await openBuild(page, 1);
-  await page.click('#build-source');
+  await page.click('#build-source', { force: true });
   await page.waitForFunction(() => window.__nb.build.state.done);
   await expect(page.locator('#screen-build .confetti-piece')).toHaveCount(0, { timeout: 6000 });
 });

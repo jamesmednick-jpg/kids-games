@@ -3,7 +3,7 @@ import { initAudio, setMuted, say } from './audio.js';
 import { mountBuild } from './build.js';
 import { mountAdd } from './add.js';
 import { mountPlay } from './play.js';
-import { drawBuddy } from './render.js';
+import { drawBuddy, lookAt } from './render.js';
 
 // ===== Parent config: edit these freely =====
 export const MAX_NUMBER = 10;        // 10 or 20
@@ -45,6 +45,19 @@ $('btn-mute').addEventListener('click', () => {
   setMuted(state.muted);
   $('btn-mute').textContent = state.muted ? '🔇' : '🔊';
 });
+
+// Every buddy looks at her finger, and straight ahead again a moment after
+// she lets go.
+let lookTimer = null;
+let lookFrame = null;
+function follow(e) {
+  cancelAnimationFrame(lookFrame);
+  lookFrame = requestAnimationFrame(() => lookAt(e.clientX, e.clientY));
+  clearTimeout(lookTimer);
+  lookTimer = setTimeout(() => lookAt(null), 1500);
+}
+document.addEventListener('pointermove', follow, { passive: true });
+document.addEventListener('pointerdown', follow, { passive: true });
 
 // Little buddies on the home tiles, so the first screen already looks like
 // the game rather than a row of emoji.

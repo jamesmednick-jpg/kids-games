@@ -1,7 +1,8 @@
 import { makeAddBag } from './blocks.js';
-import { drawBuddy, cubeSizeFor, celebrate as dance, popFace, stars, clearFx } from './render.js';
-import { say, sayAll, clunk, step, sparkle, fanfare } from './audio.js';
+import { drawBuddy, cubeSizeFor, celebrate as dance, popFace, stars, sparks, flash, clearFx } from './render.js';
+import { say, sayAll, clunk, ding, sparkle, fanfare } from './audio.js';
 import { makeNudge } from './nudge.js';
+import { makeHold } from './hold.js';
 
 const MERGE_TOLERANCE = 0.30;   // fraction of screen width; generous on purpose
 const TAP_TOLERANCE = 12;       // px; less than this is a tap, not a drag
@@ -22,6 +23,8 @@ export function mountAdd(host, { max, nudgeMs }) {
   const state = { a: 0, b: 0, merged: false };
   let size = 0;                 // one cube size for both buddies and their sum
   let drag = null;
+  const hold = makeHold(host);
+  let beckonTimer = null;
 
   const nudge = makeNudge({
     delay: nudgeMs,
@@ -43,7 +46,23 @@ export function mountAdd(host, { max, nudgeMs }) {
     clearFx(host);
     drawBuddy(aEl, state.a, { size });
     drawBuddy(bEl, state.b, { size });
-    for (const el of [aEl, bEl]) { el.classList.remove('merging'); el.style.transform = ''; }
+    for (const el of [aEl, bEl]) { el.classList.remove('merging', 'beckon'); el.style.transform = ''; }
+  }
+
+  // The other buddy jiggles toward the one she is bringing, with sparkles
+  // crackling in the gap between them.
+  function beckon(other, toward, on) {
+    other.classList.toggle('beckon', on);
+    other.style.setProperty('--toward', toward);
+    clearInterval(beckonTimer);
+    beckonTimer = null;
+    if (!on) return;
+    beckonTimer = setInterval(() => {
+      const a = aEl.getBoundingClientRect(), b = bEl.getBoundingClientRect(), s = host.getBoundingClientRect();
+      const midX = (a.left + a.width / 2 + b.left + b.width / 2) / 2 - s.left;
+      const y = Math.max(a.bottom, b.bottom) - s.top - size;
+      sparks(host, midX, y, 3, 26);
+    }, 110);
   }
 
   function setPair(a, b) {
@@ -69,6 +88,8 @@ export function mountAdd(host, { max, nudgeMs }) {
     const total = state.a + state.b;
 
     // 1. together
+    beckon(aEl, 0, false);
+    beckon(bEl, 0, false);
     const row = rowEl.getBoundingClientRect();
     const centerX = row.left + row.width / 2;
     for (const el of [aEl, bEl]) {
@@ -79,23 +100,35 @@ export function mountAdd(host, { max, nudgeMs }) {
     clunk();
     await wait(420);
 
-    // 2. stars where they touch
+    // 2. a flash and stars where they touch
     const screen = host.getBoundingClientRect();
+    flash(host);
     stars(host, centerX - screen.left, row.bottom - screen.top - size * 1.5);
     sparkle();
     await wait(160);
 
-    // 3. the sum, counted from one
+    // 3. the sum, counted from one, glittering the whole time
     rowEl.hidden = true;
     resultEl.hidden = false;
     let buddy = drawBuddy(resultEl, total, { size, faces: false });
+    const glitter = setInterval(() => {
+      const r = buddy.getBoundingClientRect();
+      sparks(host, r.left + r.width / 2 - screen.left + (Math.random() - 0.5) * r.width * 1.6,
+        r.top - screen.top + Math.random() * r.height, 2, 8);
+    }, 90);
     await say('join');
     const cubes = [...buddy.querySelectorAll('.cube')].reverse();   // bottom up
     for (let k = 1; k <= total; k++) {
-      cubes[k - 1]?.classList.add('lit');
-      step(k);
+      const cube = cubes[k - 1];
+      if (cube) {
+        cube.classList.add('lit');
+        const r = cube.getBoundingClientRect();
+        sparks(host, r.left + r.width / 2 - screen.left, r.top + r.height / 2 - screen.top, 6, size * 0.6);
+      }
+      ding(k);
       await say(`count-${k}`);
     }
+    clearInterval(glitter);
 
     // 4. alive
     buddy = drawBuddy(resultEl, total, { size });
@@ -111,6 +144,7 @@ export function mountAdd(host, { max, nudgeMs }) {
   function onDown(el, e) {
     if (state.merged) return;
     drag = { el, startX: e.clientX, dx: 0 };
+    hold.grab(el, e);
     el.setPointerCapture?.(e.pointerId);
     e.preventDefault();
   }
@@ -118,12 +152,20 @@ export function mountAdd(host, { max, nudgeMs }) {
     if (!drag) return;
     drag.dx = e.clientX - drag.startX;
     drag.el.style.transform = `translateX(${drag.dx}px)`;
+    hold.move(e);
+    // Close enough that the other one gets excited.
+    const other = drag.el === aEl ? bEl : aEl;
+    const towardOther = drag.el === aEl ? drag.dx > 0 : drag.dx < 0;
+    const near = towardOther && Math.abs(drag.dx) > host.clientWidth * MERGE_TOLERANCE * 0.5;
+    if (near !== other.classList.contains('beckon')) beckon(other, drag.el === aEl ? -1 : 1, near);
   }
   async function onUp() {
     if (!drag) return;
     const moved = Math.abs(drag.dx);
     const el = drag.el;
     drag = null;
+    hold.release();
+    beckon(el === aEl ? bEl : aEl, 0, false);
     nudge.poke();
     if (moved >= host.clientWidth * MERGE_TOLERANCE) return merge();
     el.style.transform = '';
@@ -140,6 +182,6 @@ export function mountAdd(host, { max, nudgeMs }) {
   return {
     state, setPair, nextPair,
     start() { nextPair(); },
-    stop() { nudge.stop(); state.merged = false; resultEl.textContent = ''; clearFx(host); },
+    stop() { nudge.stop(); hold.release(); beckon(aEl, 0, false); beckon(bEl, 0, false); state.merged = false; resultEl.textContent = ''; clearFx(host); },
   };
 }

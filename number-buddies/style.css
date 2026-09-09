@@ -198,3 +198,56 @@ button { font: inherit; border: 0; background: none; cursor: pointer; }
 /* The ghost fills in with a shimmer the instant she matches it. */
 #build-target.matched .cube { opacity: 0.55; animation: shimmer 800ms ease-out; }
 @keyframes shimmer { 0% { filter: brightness(1); opacity: 0.22; } 40% { filter: brightness(1.9); opacity: 0.9; } 100% { filter: brightness(1); opacity: 0.55; } }
+
+/* ---------- life ---------- */
+/* Breathing, blinking, glancing: on all the time, on each buddy's own rhythm. */
+.buddy.alive .parts { animation: breathe 2.6s ease-in-out infinite; animation-delay: var(--breath-delay, 0s); transform-origin: 50% 100%; }
+@keyframes breathe { 0%, 100% { transform: scaleY(1) translateY(0); } 50% { transform: scaleY(1.02) translateY(-2px); } }
+.lid { transform-box: fill-box; transform-origin: 50% 0%; transform: scaleY(0); }
+.buddy.alive .lid { animation: blink 4.5s linear infinite; animation-delay: var(--blink-delay, 0s); }
+@keyframes blink { 0%, 91% { transform: scaleY(0); } 94%, 96% { transform: scaleY(1); } 99%, 100% { transform: scaleY(0); } }
+.pupil { transform: translate(var(--px, 0px), var(--py, 0px)); transition: transform 110ms ease-out; }
+.buddy.alive .glance { animation: glance 7s ease-in-out infinite; animation-delay: var(--glance-delay, 0s); }
+@keyframes glance {
+  0%, 38%, 100% { transform: translate(0, 0); }
+  42%, 52% { transform: translate(-4px, 0); }
+  56%, 66% { transform: translate(4px, 1px); }
+}
+/* The dance's darting eyes live on the inner group so finger-following still works. */
+.buddy.dance .glance { animation: look 1.04s ease-in-out 3; }
+
+/* Held: lifted, leaning into the drag, the top lagging like a reed. */
+.held { z-index: 5; }
+.held .parts { animation: none; transform: rotate(var(--lean, 0deg)) scale(1.06); transform-origin: 50% 100%; transition: transform 90ms ease-out; }
+.held .cube { transform: rotate(calc(var(--lean, 0deg) * var(--lag, 0))); transform-origin: 50% 100%; transition: transform 140ms ease-out; }
+.held .sign { transform: rotate(calc(var(--lean, 0deg) * 1.3)); transform-origin: 50% 100%; transition: transform 140ms ease-out; }
+.held .face ellipse:not(.lid) { transform-box: fill-box; transform-origin: center; transform: scale(1.15); }
+.held .buddy { filter: drop-shadow(0 14px 10px rgba(58, 44, 34, 0.28)); }
+.settle .parts { animation: settle 650ms ease-out; transform-origin: 50% 100%; }
+@keyframes settle {
+  0% { transform: rotate(0); } 20% { transform: rotate(-5deg); } 45% { transform: rotate(3.5deg); }
+  70% { transform: rotate(-1.5deg); } 100% { transform: rotate(0); }
+}
+
+/* "Come here!" — the other buddy jiggles toward the one she is bringing. */
+.beckon .parts { animation: beckon 460ms ease-in-out infinite; transform-origin: 50% 100%; }
+@keyframes beckon {
+  0%, 100% { transform: rotate(0) translateX(0); }
+  50% { transform: rotate(calc(var(--toward, 1) * 7deg)) translateX(calc(var(--toward, 1) * 8px)) scaleY(1.03); }
+}
+
+/* Sparks: tiny glitter that rises and winks out. */
+.spark { position: absolute; border-radius: 50%; box-shadow: 0 0 6px #ffd23f, 0 0 2px #fff; animation: spark 700ms ease-out forwards; }
+@keyframes spark { 0% { transform: translate(-50%, -50%) scale(0); opacity: 1; } 35% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; } 100% { transform: translate(-50%, calc(-50% + var(--rise, -20px))) scale(0); opacity: 0; } }
+
+/* The flash of two buddies meeting. */
+.flash { position: absolute; inset: 0; background: #fff; animation: flash 420ms ease-out forwards; }
+@keyframes flash { 0% { opacity: 0.85; } 100% { opacity: 0; } }
+
+/* A cube in flight from the button to the tower. */
+.flying { position: absolute; z-index: 7; }
+
+/* The tap-cube bobs invitingly all the time. */
+#build-source { animation: bob 1.5s ease-in-out infinite; }
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+#build-source:active { animation: none; }

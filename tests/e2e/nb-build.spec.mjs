@@ -9,9 +9,11 @@ async function openBuild(page, target = null) {
   return page.evaluate(() => window.__nb.build.state.target);
 }
 
+// A tap sends a cube flying; it is only counted once it lands.
 const tap = async page => {
-  await page.click('#build-source');
-  await page.waitForTimeout(120);
+  await page.click('#build-source', { force: true });
+  await page.waitForFunction(() => !document.querySelector('#screen-build .flying'));
+  await page.waitForTimeout(60);
 };
 
 test('the game asks for a target and shows a ghost of it', async ({ page }) => {
@@ -134,7 +136,7 @@ test('a longer pause adds a spoken nudge', async ({ page }) => {
 
 test('touching the cube resets the nudge', async ({ page }) => {
   await openBuildFast(page, 900);
-  await page.click('#build-source');
+  await page.click('#build-source', { force: true });
   await page.waitForTimeout(500);
   expect(await page.locator('#build-source.hint').count()).toBe(0);
 });
@@ -150,7 +152,7 @@ test('the nudge never advances the game for her', async ({ page }) => {
 test('a finished buddy stops nudging', async ({ page }) => {
   await openBuildFast(page, 400);
   await page.evaluate(() => window.__nb.build.setTarget(1));
-  await page.click('#build-source');
+  await page.click('#build-source', { force: true });
   await page.waitForFunction(() => window.__nb.build.state.done);
   await page.evaluate(() => { window.__nb.spoken.length = 0; });
   await page.waitForTimeout(1200);

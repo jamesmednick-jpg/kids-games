@@ -6,6 +6,8 @@ export const SIGN_SIZE = 72;
 const GAP = 4;
 const INK = '#3a2c22';   // warm dark brown, like paint on a wooden toy
 
+const rand = (a, b) => a + Math.random() * (b - a);
+
 const svg = (cls, body, viewBox = '0 0 100 100') =>
   `<svg class="${cls}" viewBox="${viewBox}" overflow="visible" aria-hidden="true">${body}</svg>`;
 
@@ -14,25 +16,28 @@ const dots = (n, r, cy) => Array.from({ length: n }, (_, i) => {
   return `<circle class="feature-shape" cx="${x}" cy="${cy}" r="${r}"/>`;
 }).join('');
 
-const eye = (cx, cy, r) =>
+// An eye: white, a pupil that follows her finger (.pupil) and glances about
+// on its own (.glance), and a lid in the cube's own colour that blinks.
+const eye = (cx, cy, r, lid) =>
   `<ellipse cx="${cx}" cy="${cy}" rx="${r}" ry="${r * 1.08}" fill="#fff" stroke="${INK}" stroke-width="4"/>
-   <g class="pupil">
+   <g class="pupil"><g class="glance">
      <circle cx="${cx}" cy="${cy + r * 0.18}" r="${r * 0.42}" fill="${INK}"/>
      <circle cx="${cx - r * 0.2}" cy="${cy - r * 0.15}" r="${r * 0.14}" fill="#fff"/>
-   </g>`;
+   </g></g>
+   <ellipse class="lid" cx="${cx}" cy="${cy}" rx="${r + 1}" ry="${r * 1.08 + 1}" fill="${lid}" stroke="${INK}" stroke-width="3"/>`;
 
 const grin = (y = 66) => `<path d="M30 ${y} Q50 ${y + 20} 70 ${y}" fill="none" stroke="${INK}" stroke-width="6" stroke-linecap="round"/>`;
 
 // One's single eye is its whole face; everyone else gets two.
-const FACE_TWO_EYES = svg('face', eye(34, 40, 13) + eye(66, 40, 13) + grin());
-const FACE_GRIN_ONLY = svg('face', grin(74));
+const faceTwoEyes = lid => svg('face', eye(34, 40, 13, lid) + eye(66, 40, 13, lid) + grin());
+const faceGrinOnly = () => svg('face', grin(74));
 
 // Each buddy wears N of its own decoration, so the decoration is itself
 // countable. Shapes are drawn in a 100x100 box and scaled with the cubes.
 export function featureShapes(n) {
   switch (FEATURES[n]) {
     case 'eye':       // one big eye — a cyclops
-      return svg('feature', `<g class="feature-shape">${eye(50, 50, 17)}</g>`);
+      return svg('feature', `<g class="feature-shape">${eye(50, 50, 17, COLORS[1])}</g>`);
     case 'antennae':  // two bobbles, out from the temples so they miss the sign
       return svg('feature', [[-1, 8], [1, 92]].map(([d, x]) =>
         `<line x1="${x}" y1="18" x2="${x + d * 22}" y2="-14" stroke="${INK}" stroke-width="5" stroke-linecap="round"/>
@@ -94,9 +99,13 @@ export function drawBuddy(host, n, { availableH = host.clientHeight || 520, size
   size = size || cubeSizeFor(availableH, n);
 
   const buddy = document.createElement('div');
-  buddy.className = 'buddy';
+  buddy.className = 'buddy alive';
   buddy.dataset.n = n;
   buddy.style.setProperty('--cube', `${size}px`);
+  // Each buddy breathes, blinks and glances on its own rhythm.
+  buddy.style.setProperty('--breath-delay', `${-rand(0, 2.6)}s`);
+  buddy.style.setProperty('--blink-delay', `${-rand(0, 4.5)}s`);
+  buddy.style.setProperty('--glance-delay', `${-rand(0, 7)}s`);
 
   const signEl = document.createElement('div');
   signEl.className = 'sign';
@@ -114,9 +123,11 @@ export function drawBuddy(host, n, { availableH = host.clientHeight || 520, size
       const cube = document.createElement('div');
       cube.className = 'cube';
       cube.dataset.index = pn - 1 - i;
-      cube.style.cssText = `width:${size}px;height:${size}px;background:${COLORS[pn]};--i:${pn - 1 - i}`;
+      // --i counts from the top; --lag grows toward the top so a held tower
+      // bends like a reed rather than tilting as a block.
+      cube.style.cssText = `width:${size}px;height:${size}px;background:${COLORS[pn]};--i:${pn - 1 - i};--lag:${(i * 0.12).toFixed(2)}`;
       if (faces && pi === 0 && i === pn - 1) {
-        cube.innerHTML = FEATURES[pn] === 'eye' ? FACE_GRIN_ONLY : FACE_TWO_EYES;
+        cube.innerHTML = FEATURES[pn] === 'eye' ? faceGrinOnly() : faceTwoEyes(COLORS[pn]);
       }
       part.append(cube);
     }
@@ -134,7 +145,6 @@ export function drawBuddy(host, n, { availableH = host.clientHeight || 520, size
 // Build and Add earn the fireworks; Play stays calm and never calls these.
 
 const PALETTE = Object.values(COLORS).filter(c => c !== '#ffffff');
-const rand = (a, b) => a + Math.random() * (b - a);
 
 // Effects live in one overlay per screen, above the towers, never touchable.
 function fxLayer(screen) {
@@ -217,4 +227,55 @@ export function celebrate(screen, buddy, n) {
     const s = screen.getBoundingClientRect();
     fireworks(screen, r.left + r.width / 2 - s.left, r.top + r.height / 2 - s.top);
   }
+}
+
+// ---------- life ----------
+
+// Every face on the page looks toward a point; null looks straight ahead.
+export function lookAt(x, y) {
+  for (const face of document.querySelectorAll('.face')) {
+    if (x === null) { face.style.setProperty('--px', '0px'); face.style.setProperty('--py', '0px'); continue; }
+    const r = face.getBoundingClientRect();
+    if (!r.width) continue;
+    const dx = x - (r.left + r.width / 2), dy = y - (r.top + r.height / 2);
+    const dist = Math.hypot(dx, dy) || 1;
+    const reach = Math.min(1, dist / 90) * 6;   // pupils travel up to 6 units
+    face.style.setProperty('--px', `${(dx / dist * reach).toFixed(1)}px`);
+    face.style.setProperty('--py', `${(dy / dist * reach).toFixed(1)}px`);
+  }
+}
+
+// Tiny glittering sparks around a point. Used for trails, meetings, landings.
+export function sparks(screen, x, y, count = 6, spread = 22) {
+  const fx = fxLayer(screen);
+  for (let i = 0; i < count; i++) {
+    piece(fx, 'spark',
+      `left:${x + rand(-spread, spread)}px; top:${y + rand(-spread, spread)}px; width:${rand(4, 9)}px; height:${rand(4, 9)}px;` +
+      `background:${i % 3 ? '#ffd23f' : '#fff'}; animation-delay:${rand(0, 0.12)}s; --rise:${rand(-30, -8)}px`,
+      800);
+  }
+}
+
+// A white flash across the screen for the instant two buddies touch.
+export function flash(screen) {
+  piece(fxLayer(screen), 'flash', '', 450);
+}
+
+// A cube flies from one place to another (both rects in viewport coords) and
+// resolves when it lands.
+export function flyCube(screen, from, to, color, size) {
+  const fx = fxLayer(screen);
+  const s = screen.getBoundingClientRect();
+  const el = document.createElement('i');
+  el.className = 'flying cube';
+  el.style.cssText = `width:${size}px;height:${size}px;background:${color};left:0;top:0`;
+  fx.append(el);
+  const x0 = from.left + from.width / 2 - size / 2 - s.left, y0 = from.top + from.height / 2 - size / 2 - s.top;
+  const x1 = to.left - s.left, y1 = to.top - s.top;
+  const anim = el.animate([
+    { transform: `translate(${x0}px, ${y0}px) scale(0.9) rotate(0deg)` },
+    { transform: `translate(${(x0 + x1) / 2}px, ${Math.min(y0, y1) - 60}px) scale(1.05) rotate(180deg)`, offset: 0.55 },
+    { transform: `translate(${x1}px, ${y1}px) scale(1) rotate(360deg)` },
+  ], { duration: 260, easing: 'cubic-bezier(.3, .1, .6, 1)', fill: 'forwards' });
+  return anim.finished.then(() => el.remove()).catch(() => el.remove());
 }

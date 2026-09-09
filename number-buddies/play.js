@@ -1,6 +1,7 @@
 import { joinTowers, splitTower } from './blocks.js';
 import { drawBuddy, cubeSizeFor, SIGN_SIZE } from './render.js';
 import { say, thunk, clunk } from './audio.js';
+import { makeHold } from './hold.js';
 
 // No goals. She stacks, joins and splits, and every tower says its own number
 // whenever it changes. Towers sit on the board by their bottom-left corner,
@@ -15,6 +16,7 @@ export function mountPlay(host, { max }) {
   let seq = 0;
   let size = 0;
   let drag = null;
+  const hold = makeHold(host);
 
   const towerEl = t => board.querySelector(`.tower[data-id="${t.id}"]`);
 
@@ -94,7 +96,7 @@ export function mountPlay(host, { max }) {
       place(t, el);
     }
     drag = { t, el, ox: e.clientX - rect.left - t.x, oy: (rect.bottom - e.clientY) - t.y };
-    el.classList.add('lifted');
+    hold.grab(el, e);
     el.setPointerCapture?.(e.pointerId);
     e.preventDefault();
   }
@@ -104,11 +106,12 @@ export function mountPlay(host, { max }) {
     drag.t.x = e.clientX - rect.left - drag.ox;
     drag.t.y = (rect.bottom - e.clientY) - drag.oy;
     place(drag.t, drag.el);
+    hold.move(e);
   }
   function onUp() {
     if (!drag) return;
     const me = drag.t;
-    drag.el.classList.remove('lifted');
+    hold.release();
     drag = null;
     // Keep it on the table, sign and all.
     me.x = Math.max(0, Math.min(board.clientWidth - size, me.x));
@@ -129,6 +132,6 @@ export function mountPlay(host, { max }) {
   return {
     state, addTower, join, splitTop,
     start() { size = cubeSizeFor(board.clientHeight || 420, max); state.towers = []; seq = 0; paint(); },
-    stop() { state.towers = []; paint(); },
+    stop() { hold.release(); state.towers = []; paint(); },
   };
 }
