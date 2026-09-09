@@ -128,9 +128,15 @@ above the pair.
 
 ### Sizing
 
-Cube edge is computed so that the tallest tower on screen fits the play area
-with margin, clamped to a minimum of 44 px so cubes stay tappable. At ten
-cubes on a typical phone this lands around 56 px. Towers are centred
+**Every buddy on a screen shares one cube size.** Ten must be exactly one
+cube taller than Nine — that is the entire point of the blocks — so a scene
+works its cube size out once from the tallest buddy that can appear in it
+(`MAX_NUMBER`, in practice) and every tower on that screen uses it. A One is
+one small cube; a Ten reaches the top. Cubes never resize between rounds.
+
+Cube edge is computed so that the tallest tower fits the play area with
+margin, clamped to a minimum of 44 px so cubes stay tappable. At ten cubes
+on a typical phone this lands around 46–56 px. Towers are centred
 horizontally in their slot.
 
 Above 10 (see Range below), a tower renders as a full ten-block plus the
@@ -154,10 +160,12 @@ command and shipped as `.m4a` files. Nothing is spoken live by the phone.
 This guarantees identical delivery on every device, works with no network,
 and cannot fail because a voice is missing from the phone.
 
-Voice: **Moira** (`en_IE`, Irish), tuned playful:
+Voice: **Moira** (`en_IE`, Irish), tuned gentle. Jake listened to three
+levels of playfulness and chose the calmest; the first cut was too fast and
+too sing-song for a five-year-old to hear a hundred times.
 
 ```
-[[pbas 66]] [[pmod 170]] [[rate 200]]
+[[pbas 52]] [[pmod 90]] [[rate 145]]
 ```
 
 `pbas` raises the pitch, `pmod` is the sing-song lilt, `rate` is words per
@@ -169,11 +177,12 @@ so the whole voice can be retuned or swapped by editing one line and running
 
 Each number speaks its own lines at its own base pitch, so the buddies feel
 like different little characters without needing different voices. Pitch
-falls linearly from squeaky One to deep Ten:
+falls linearly from light little One to deep Ten, and stays comfortably
+audible at Twenty:
 
 ```
-pbas(n) = round(92 - (n - 1) * 5.6)     // 92 at n=1, 42 at n=10
-rate(n) = round(205 - (n - 1) * 3)      // little ones talk faster
+pbas(n) = round(70 - (n - 1) * 2.2)     // 70 at n=1, 50 at n=10, 28 at n=20
+rate(n) = round(155 - (n - 1) * 1.5)    // little ones talk a touch faster
 ```
 
 Narration lines — prompts, counting, cheers — use the standard tuned Moira
@@ -203,7 +212,7 @@ permanently, so the follow-up work stays small.
 writes one `.m4a` per entry plus `voice/manifest.json`. Clips needed:
 
 - `count-1` … `count-20` — "one", "two", …, the counting beat. Each clip is
-  generated at a pitch `pbas = 50 + k * 1.6`, so playing them in sequence
+  generated at a pitch `pbas = 44 + k * 1.6`, so playing them in sequence
   produces the rising count on its own. Playback is a plain sequence with no
   runtime pitch handling.
 - `is-1` … `is-20` — "I'm one!", each at that number's character pitch.

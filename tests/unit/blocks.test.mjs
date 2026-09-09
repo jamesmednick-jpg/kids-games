@@ -69,19 +69,23 @@ test('cubes and gaps fit the space whenever the minimum allows', () => {
   assert.ok(s * n + gap * (n - 1) <= avail + 1e-9);
 });
 
-test('character pitch falls from squeaky One to deep Ten', () => {
-  assert.equal(characterPitch(1), 92);
-  assert.equal(characterPitch(10), 42);
+test('character pitch falls from light little One to deep Ten', () => {
+  assert.equal(characterPitch(1), 70);
+  assert.equal(characterPitch(10), 50);
   for (let n = 2; n <= 10; n++) assert.ok(characterPitch(n) < characterPitch(n - 1), `n=${n}`);
 });
 
-test('little buddies talk faster than big ones', () => {
-  assert.equal(characterRate(1), 205);
-  assert.equal(characterRate(10), 178);
+test('character pitch stays audible all the way to Twenty', () => {
+  for (let n = 1; n <= MAX_SUPPORTED; n++) assert.ok(characterPitch(n) >= 20, `n=${n} is ${characterPitch(n)}`);
+});
+
+test('little buddies talk a touch faster than big ones', () => {
+  assert.equal(characterRate(1), 155);
+  assert.equal(characterRate(10), 142);
 });
 
 test('the counting pitch rises with each cube', () => {
-  assert.equal(countPitch(1), 52);
+  assert.equal(countPitch(1), 46);
   for (let k = 2; k <= 20; k++) assert.ok(countPitch(k) > countPitch(k - 1), `k=${k}`);
 });
 

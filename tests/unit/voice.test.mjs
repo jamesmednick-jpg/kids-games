@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { buildPhrases, VOICES, NARRATOR } from '../../tools/make-voice.mjs';
 import { characterPitch, countPitch } from '../../number-buddies/blocks.js';
 
-test('the narrator is Moira, tuned playful', () => {
+test('the narrator is Moira, tuned gentle', () => {
   assert.equal(NARRATOR.voice, 'Moira');
-  assert.deepEqual([NARRATOR.pbas, NARRATOR.pmod, NARRATOR.rate], [66, 170, 200]);
+  assert.deepEqual([NARRATOR.pbas, NARRATOR.pmod, NARRATOR.rate], [52, 90, 145]);
 });
 
 test('every number has a voice entry, all Moira for now', () => {

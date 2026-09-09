@@ -15,7 +15,7 @@ import { characterPitch, characterRate, countPitch } from '../number-buddies/blo
 
 // ===== Voice config: edit these freely, then run `npm run voice` =====
 // pbas = pitch (higher is squeakier), pmod = sing-song lilt, rate = words/min.
-export const NARRATOR = { voice: 'Moira', pbas: 66, pmod: 170, rate: 200 };
+export const NARRATOR = { voice: 'Moira', pbas: 52, pmod: 90, rate: 145 };
 
 // One entry per buddy. Today every buddy is Moira at its own pitch. To give
 // each buddy a real voice of its own, change the `voice` here and re-run —
@@ -42,13 +42,13 @@ export function buildPhrases(max) {
   // The counting beat. Each clip is a little higher than the last, so playing
   // them in order gives the rising count with no runtime pitch handling.
   for (let k = 1; k <= max; k++) {
-    out.push(narrated(`count-${k}`, `${word(k)}.`, { pbas: countPitch(k), pmod: 120 }));
+    out.push(narrated(`count-${k}`, `${word(k)}.`, { pbas: countPitch(k), pmod: 100 }));
   }
 
   // A buddy introducing itself, in that buddy's own voice.
   for (let n = 1; n <= max; n++) {
     const v = VOICES[n];
-    out.push({ id: `is-${n}`, text: `[[emph +]] I'm ${word(n)}!`, voice: v.voice, pbas: v.pbas, pmod: 170, rate: v.rate });
+    out.push({ id: `is-${n}`, text: `[[emph +]] I'm ${word(n)}!`, voice: v.voice, pbas: v.pbas, pmod: NARRATOR.pmod, rate: v.rate });
   }
 
   // The prompt.

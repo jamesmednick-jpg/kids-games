@@ -37,14 +37,15 @@ export function cubeSize(availableH, n, { gap = 4, min = 44, max = 72 } = {}) {
   return Math.max(min, Math.min(max, fit));
 }
 
-// Squeaky One down to deep Ten, so the buddies feel like different little
-// characters without needing different voices.
-export const characterPitch = n => Math.round(92 - (n - 1) * 5.6);
-export const characterRate = n => Math.round(205 - (n - 1) * 3);
+// Light little One down to deep Ten, so the buddies feel like different
+// characters without needing different voices. Gentle on purpose, and the
+// ramp stays comfortably audible all the way to Twenty.
+export const characterPitch = n => Math.round(70 - (n - 1) * 2.2);
+export const characterRate = n => Math.round(155 - (n - 1) * 1.5);
 
 // Each counting clip is generated a little higher than the last, so playing
 // them in order produces the rising count with no runtime pitch handling.
-export const countPitch = k => Math.round(50 + k * 1.6);
+export const countPitch = k => Math.round(44 + k * 1.6);
 
 function shuffle(items, rng) {
   const a = [...items];
