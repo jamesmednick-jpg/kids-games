@@ -1,0 +1,60 @@
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none;
+  background: #ffe5ec; font-family: -apple-system, system-ui, sans-serif;
+  touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
+}
+body { position: fixed; inset: 0; }
+.screen { position: absolute; inset: 0; display: flex; flex-direction: column; }
+.screen[hidden] { display: none; }
+button {
+  border: 0; border-radius: 18px; background: #fff; font-size: 30px; line-height: 1;
+  min-width: 56px; min-height: 56px; box-shadow: 0 3px 0 #e8a2b8; cursor: pointer; padding: 0;
+}
+button:active { transform: translateY(2px); box-shadow: 0 1px 0 #e8a2b8; }
+.row { display: flex; gap: 12px; justify-content: center; align-items: center; }
+
+/* shape picker */
+#screen-shape { padding: max(12px, env(safe-area-inset-top)) 12px 12px; gap: 12px; align-items: center; }
+.title { font-size: 56px; }
+#skins button { width: 60px; height: 60px; border-radius: 50%; border: 4px solid #fff; }
+#skins button.selected { border-color: #b5179e; }
+#tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; max-width: 420px; flex: 1; min-height: 0; }
+#tiles button { border-radius: 24px; overflow: hidden; min-height: 0; }
+#tiles button:last-child { grid-column: 1 / -1; justify-self: center; width: calc(50% - 6px); }
+#tiles canvas { width: 100%; height: 100%; display: block; }
+
+/* salon */
+#screen-salon { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+#palette { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; padding: 6px 4px 4px; }
+#palette button { aspect-ratio: 1; min-width: 0; width: 100%; border-radius: 50%; border: 4px solid rgba(255,255,255,0.7); }
+#palette button.selected { border-color: #fff; box-shadow: 0 0 0 3px #b5179e, 0 3px 0 #e8a2b8; transform: scale(1.08); }
+#stage { position: relative; flex: 1; min-height: 0; }
+#hand, #confetti { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+#confetti { pointer-events: none; }
+.corner { position: absolute; top: 8px; width: 56px; height: 56px; font-size: 26px; opacity: 0.9; }
+.corner.left { left: 8px; } .corner.right { right: 8px; }
+#tray { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 8px; background: #fff0f5; }
+#tray[hidden] { display: none; }
+#tray button { font-size: 34px; }
+#tools { display: flex; gap: 6px; padding: 8px 6px; background: #ffc2d1; }
+#tools button { flex: 1; min-width: 0; height: 68px; font-size: 32px; }
+#tools button.selected { background: #fff3b0; box-shadow: 0 0 0 3px #b5179e, 0 3px 0 #e8a2b8; }
+#tools button.done { background: #b9fbc0; }
+#tools button.armed { background: #ffd6a5; animation: pulse 0.7s infinite alternate; }
+@keyframes pulse { from { transform: scale(1); } to { transform: scale(1.08); } }
+
+/* celebration + fallback overlays */
+#party, #fallback {
+  position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end;
+  align-items: center; gap: 16px; padding-bottom: max(24px, env(safe-area-inset-bottom));
+  pointer-events: none;
+}
+#party[hidden], #fallback[hidden] { display: none; }
+#party .tada { font-size: 96px; animation: pop 0.6s ease-out; }
+@keyframes pop { from { transform: scale(0.2); } 60% { transform: scale(1.2); } to { transform: scale(1); } }
+#party .row, #fallback button { pointer-events: auto; }
+button.big { width: 120px; height: 120px; font-size: 56px; border-radius: 32px; }
+#fallback { background: #fff0f5; pointer-events: auto; justify-content: center; }
+#fallback img { max-width: 90%; max-height: 60%; border-radius: 16px; box-shadow: 0 6px 20px rgba(0,0,0,0.2); -webkit-touch-callout: default; }
+#fallback .hint { font-size: 22px; color: #b5179e; }

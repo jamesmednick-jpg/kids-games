@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Nail Salon">
+<meta name="theme-color" content="#ffb3c6">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="stylesheet" href="./style.css">
+<title>Nail Salon</title>
+</head>
+<body>
+
+<section id="screen-shape" class="screen">
+  <div class="title">💅</div>
+  <div id="skins" class="row"></div>
+  <div id="tiles"></div>
+</section>
+
+<section id="screen-salon" class="screen" hidden>
+  <div id="palette"></div>
+  <div id="stage">
+    <canvas id="hand"></canvas>
+    <canvas id="confetti" hidden></canvas>
+    <button id="btn-home" class="corner left" aria-label="Home">🏠</button>
+    <button id="btn-mute" class="corner right" aria-label="Sound">🔊</button>
+  </div>
+  <div id="tray" hidden></div>
+  <div id="tools">
+    <button id="tool-brush" class="tool selected" data-tool="brush" aria-label="Brush">🖌️</button>
+    <button id="tool-glitter" class="tool" data-tool="glitter" aria-label="Glitter">✨</button>
+    <button id="tool-sticker" class="tool" data-tool="sticker" aria-label="Stickers">❤️</button>
+    <button id="tool-clear" class="tool" aria-label="Clear nail">🧽</button>
+    <button id="btn-done" class="tool done" aria-label="Done">✔️</button>
+  </div>
+  <div id="party" hidden>
+    <div class="tada">🎉</div>
+    <div class="row">
+      <button id="btn-photo" class="big" aria-label="Photo">📸</button>
+      <button id="btn-new" class="big" aria-label="New hand">🆕</button>
+    </div>
+  </div>
+  <div id="fallback" hidden>
+    <img id="fallback-img" alt="Your nails">
+    <div class="hint">👆 hold to save</div>
+    <button id="btn-fallback-close" class="big" aria-label="Close">✔️</button>
+  </div>
+</section>
+
+<script type="module" src="./game.js"></script>
+</body>
+</html>
