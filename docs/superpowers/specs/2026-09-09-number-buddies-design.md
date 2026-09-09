@@ -47,10 +47,14 @@ Identical to Nail Salon:
 number-buddies/
   index.html               game shell
   style.css
-  game.js                  modes, state machine, parent settings
-  blocks.js                tower model: build, split, join, colours, faces
-  render.js                DOM/CSS rendering of towers and faces
+  game.js                  parent settings, screen switching, mounts the modes
+  blocks.js                tower model: join, split, colours, features, pitches
+  render.js                DOM/CSS rendering of towers, faces and the sign
   audio.js                 clip playback + synthesised sound effects
+  build.js                 Build mode
+  add.js                   Add mode
+  play.js                  Play mode
+  nudge.js                 the idle hint clock, shared by Build and Add
   voice/                   pre-generated .m4a speech clips
     manifest.json          clip id -> filename, generated
     *.m4a
