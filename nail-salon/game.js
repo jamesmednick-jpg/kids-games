@@ -18,6 +18,7 @@ const els = {
   stage: $('stage'), hand: $('hand'), palette: $('palette'), tray: $('tray'),
   toolButtons: [...document.querySelectorAll('#tools .tool[data-tool]')],
   stickerBtn: $('tool-sticker'), clearBtn: $('tool-clear'),
+  party: $('party'), confetti: $('confetti'), fallback: $('fallback'), fallbackImg: $('fallback-img'),
 };
 
 export const state = {
@@ -32,6 +33,8 @@ function showScreen(name) {
   state.screen = name;
   els.tray.hidden = true;
   armClear(false);
+  hideParty();
+  els.fallback.hidden = true;
   els.shape.hidden = name !== 'shape';
   els.salon.hidden = name !== 'salon';
 }
@@ -219,6 +222,95 @@ const endStroke = () => { state.activeNail = -1; state.last = null; };
 els.hand.addEventListener('pointerup', endStroke);
 els.hand.addEventListener('pointercancel', endStroke);
 
+// ---------- celebration ----------
+function startConfetti(seconds = 3) {
+  const c = els.confetti;
+  const r = els.stage.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  c.hidden = false;
+  c.width = Math.round(r.width * dpr); c.height = Math.round(r.height * dpr);
+  const ctx = c.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const parts = Array.from({ length: 140 }, () => ({
+    x: Math.random() * r.width, y: -20 - Math.random() * r.height * 0.8,
+    vx: (Math.random() - 0.5) * 80, vy: 140 + Math.random() * 200,
+    rot: Math.random() * 6, vr: (Math.random() - 0.5) * 10,
+    size: 7 + Math.random() * 9, color: PALETTE[Math.floor(Math.random() * PALETTE.length)],
+    star: Math.random() < 0.2,
+  }));
+  const t0 = performance.now();
+  let last = t0;
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    ctx.clearRect(0, 0, r.width, r.height);
+    for (const p of parts) {
+      p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+      if (p.star) { ctx.font = `${p.size * 2}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('✨', 0, 0); }
+      else { ctx.fillStyle = p.color; ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2); }
+      ctx.restore();
+    }
+    if (now - t0 < seconds * 1000 && !c.hidden) requestAnimationFrame(frame);
+    else { ctx.clearRect(0, 0, r.width, r.height); c.hidden = true; }
+  }
+  requestAnimationFrame(frame);
+}
+
+function showParty() {
+  els.tray.hidden = true;
+  armClear(false);
+  state.activeNail = -1;
+  els.party.hidden = false;
+  startConfetti(3);
+}
+
+function hideParty() {
+  els.party.hidden = true;
+  els.confetti.hidden = true;
+}
+
+// ---------- photo ----------
+async function exportPhoto() {
+  const S = 2;
+  const out = document.createElement('canvas');
+  out.width = LOGICAL_W * S; out.height = LOGICAL_H * S;
+  const ctx = out.getContext('2d');
+  ctx.scale(S, S);
+  ctx.fillStyle = '#fff0f5';
+  ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
+  drawScene(ctx, state.hand, SKIN_TONES[state.skin], state.layers);
+  ctx.font = 'bold 28px -apple-system, system-ui, sans-serif';
+  ctx.fillStyle = '#b5179e';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText(`✨ ${CAPTION} ✨`, LOGICAL_W - 20, LOGICAL_H - 20);
+  return new Promise(res => out.toBlob(res, 'image/png'));
+}
+
+async function sharePhoto() {
+  let blob;
+  try {
+    blob = await exportPhoto();
+    const file = new File([blob], 'nails.png', { type: 'image/png' });
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: CAPTION });
+        return;
+      } catch (err) {
+        if (err && err.name === 'AbortError') return; // she closed the sheet
+        console.warn('share failed, showing fallback', err);
+      }
+    }
+  } catch (err) {
+    console.warn('photo export failed', err);
+    if (!blob) return;
+  }
+  if (els.fallbackImg.src) URL.revokeObjectURL(els.fallbackImg.src);
+  els.fallbackImg.src = URL.createObjectURL(blob);
+  els.fallback.hidden = false;
+}
+
 // ---------- wiring ----------
 $('btn-home').addEventListener('click', () => showScreen('shape'));
 els.toolButtons.forEach(b => b.addEventListener('click', () => {
@@ -229,6 +321,10 @@ els.toolButtons.forEach(b => b.addEventListener('click', () => {
 }));
 els.clearBtn.addEventListener('click', () => { els.tray.hidden = true; armClear(!state.clearArmed); });
 buildTray();
+$('btn-done').addEventListener('click', showParty);
+$('btn-new').addEventListener('click', () => { hideParty(); showScreen('shape'); });
+$('btn-photo').addEventListener('click', sharePhoto);
+$('btn-fallback-close').addEventListener('click', () => { els.fallback.hidden = true; });
 new ResizeObserver(() => { if (state.screen === 'salon') fitCanvas(); }).observe(els.stage);
 
 buildSkins();
@@ -246,6 +342,7 @@ window.__salon = {
     const { x, y, w, h } = state.hand.nails[i].rect;
     return toScreen(x + w / 2, y + h / 2);
   },
+  exportPhoto,
   layers: () => state.layers,
   layerAlphaAt: (i, x, y) => state.layers[i].alphaAt(x, y),
   layerPixelAt: (i, x, y) => state.layers[i].pixelAt(x, y),
