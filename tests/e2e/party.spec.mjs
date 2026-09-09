@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { openSalon, nailCenter, drag } from './helpers.mjs';
+import { openSalon, nailCenter, drag, zoomNail } from './helpers.mjs';
 
 test('Done shows the celebration and confetti, New hand goes back to shapes', async ({ page }) => {
   await openSalon(page);
@@ -13,6 +13,7 @@ test('Done shows the celebration and confetti, New hand goes back to shapes', as
 
 test('exportPhoto returns a PNG of 1200x1600 with the painted nails', async ({ page }) => {
   await openSalon(page);
+  await zoomNail(page, 1);
   const c = await nailCenter(page, 1);
   await drag(page, { x: c.x, y: c.y - 10 }, { x: c.x, y: c.y + 10 });
   await page.click('#btn-done');

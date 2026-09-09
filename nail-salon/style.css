@@ -1,11 +1,11 @@
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body {
   margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none;
-  background: #ffe5ec; font-family: -apple-system, system-ui, sans-serif;
+  background: #f6c9d8; font-family: -apple-system, system-ui, sans-serif;
   touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
 }
 body { position: fixed; inset: 0; }
-.screen { position: absolute; inset: 0; display: flex; flex-direction: column; }
+.screen { position: absolute; inset: 0; margin: 0 auto; max-width: 480px; display: flex; flex-direction: column; background: #ffe5ec; }
 .screen[hidden] { display: none; }
 button {
   border: 0; border-radius: 18px; background: #fff; font-size: 30px; line-height: 1;
@@ -26,7 +26,7 @@ button:active { transform: translateY(2px); box-shadow: 0 1px 0 #e8a2b8; }
 
 /* salon */
 #screen-salon { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
-#palette { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; padding: 6px 4px 4px; }
+#palette { display: grid; grid-template-columns: repeat(6, minmax(0, 64px)); justify-content: center; gap: 6px; padding: 6px 4px 4px; }
 #palette button { aspect-ratio: 1; min-width: 0; width: 100%; border-radius: 50%; border: 4px solid rgba(255,255,255,0.7); }
 #palette button.selected { border-color: #fff; box-shadow: 0 0 0 3px #b5179e, 0 3px 0 #e8a2b8; transform: scale(1.08); }
 #stage { position: relative; flex: 1; min-height: 0; }
@@ -34,11 +34,13 @@ button:active { transform: translateY(2px); box-shadow: 0 1px 0 #e8a2b8; }
 #confetti { pointer-events: none; }
 .corner { position: absolute; top: 8px; width: 56px; height: 56px; font-size: 26px; opacity: 0.9; }
 .corner.left { left: 8px; } .corner.right { right: 8px; }
+.corner.bottom-left { top: auto; bottom: 10px; left: 10px; width: 76px; height: 76px; font-size: 40px; border-radius: 24px; opacity: 1; }
+.corner[hidden] { display: none; }
 #tray { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 8px; background: #fff0f5; }
 #tray[hidden] { display: none; }
 #tray button { font-size: 34px; }
-#tools { display: flex; gap: 6px; padding: 8px 6px; background: #ffc2d1; }
-#tools button { flex: 1; min-width: 0; height: 68px; font-size: 32px; }
+#tools { display: flex; gap: 6px; padding: 8px 6px; background: #ffc2d1; justify-content: center; }
+#tools button { flex: 1; min-width: 0; max-width: 96px; height: 68px; font-size: 32px; }
 #tools button.selected { background: #fff3b0; box-shadow: 0 0 0 3px #b5179e, 0 3px 0 #e8a2b8; }
 #tools button.done { background: #b9fbc0; }
 #tools button.armed { background: #ffd6a5; animation: pulse 0.7s infinite alternate; }

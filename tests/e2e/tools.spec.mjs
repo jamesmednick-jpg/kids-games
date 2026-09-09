@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { openSalon, nailCenter, drag } from './helpers.mjs';
+import { openSalon, nailCenter, drag, zoomNail, zoomOut } from './helpers.mjs';
 
 const hasPaint = (page, i) => page.evaluate(i => window.__salon.layerHasPaint(i), i);
 const leak = (page, i) => page.evaluate(i => window.__salon.layerLeak(i), i);
@@ -8,6 +8,7 @@ test('glitter paints inside the nail only', async ({ page }) => {
   await openSalon(page);
   await page.click('#tool-glitter');
   await expect(page.locator('#tool-glitter')).toHaveClass(/selected/);
+  await zoomNail(page, 3);
   const c = await nailCenter(page, 3);
   await drag(page, { x: c.x, y: c.y - 10 }, { x: c.x, y: c.y + 10 });
   expect(await hasPaint(page, 3)).toBe(true);
@@ -22,6 +23,7 @@ test('sticker tray opens, picks a sticker, and a tap near the edge does not leak
   await page.click('#tray button[data-sticker="1"]'); // star
   await expect(page.locator('#tray')).toBeHidden();
   await expect(page.locator('#tool-sticker')).toHaveText('⭐');
+  await zoomNail(page, 2);
   const edge = await page.evaluate(() => {
     const n = window.__salon.hand().nails[2].rect;
     return window.__salon.toScreen(n.x + n.w * 0.12, n.y + n.h * 0.5);
@@ -35,6 +37,7 @@ test('dragging with the sticker tool places only one sticker', async ({ page }) 
   await openSalon(page, 'square');
   await page.click('#tool-sticker');
   await page.click('#tray button[data-sticker="7"]'); // solid dot in the selected color
+  await zoomNail(page, 2);
   const c = await nailCenter(page, 2);
   await drag(page, { x: c.x - 8, y: c.y }, { x: c.x + 8, y: c.y }, 8);
   // the dot is placed at the start point; the end point must still be empty
@@ -48,8 +51,10 @@ test('dragging with the sticker tool places only one sticker', async ({ page }) 
 test('clear nail wipes only the tapped nail', async ({ page }) => {
   await openSalon(page);
   for (const i of [0, 1]) {
+    await zoomNail(page, i);
     const c = await nailCenter(page, i);
     await drag(page, { x: c.x, y: c.y - 8 }, { x: c.x, y: c.y + 8 });
+    await zoomOut(page);
   }
   await page.click('#tool-clear');
   await expect(page.locator('#tool-clear')).toHaveClass(/armed/);

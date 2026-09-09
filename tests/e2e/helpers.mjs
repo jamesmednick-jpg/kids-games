@@ -27,3 +27,30 @@ export async function mainPixel(page, x, y) {
     return Array.from(d);
   }, [x, y]);
 }
+
+// Tap nail i in the whole-hand view and wait for the zoom animation to finish.
+export async function zoomNail(page, i) {
+  await page.waitForFunction(() => !window.__salon.state.animating);
+  const c = await nailCenter(page, i);
+  await page.mouse.click(c.x, c.y);
+  await page.waitForFunction(i => window.__salon.state.zoomNail === i && !window.__salon.state.animating, i);
+}
+
+export async function zoomOut(page) {
+  await page.click('#btn-back');
+  await page.waitForFunction(() => window.__salon.state.zoomNail === -1 && !window.__salon.state.animating);
+}
+
+// Screen-space rect of nail i (client coords).
+export function nailRect(page, i) {
+  return page.evaluate(i => {
+    const n = window.__salon.hand().nails[i].rect;
+    const a = window.__salon.toScreen(n.x, n.y);
+    const z = window.__salon.toScreen(n.x + n.w, n.y + n.h);
+    return { x: a.x, y: a.y, w: z.x - a.x, h: z.y - a.y };
+  }, i);
+}
+
+export function stageBox(page) {
+  return page.locator('#stage').boundingBox();
+}

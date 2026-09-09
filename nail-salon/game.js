@@ -19,15 +19,17 @@ const els = {
   stage: $('stage'), hand: $('hand'), palette: $('palette'), tray: $('tray'),
   toolButtons: [...document.querySelectorAll('#tools .tool[data-tool]')],
   stickerBtn: $('tool-sticker'), clearBtn: $('tool-clear'),
-  muteBtn: $('btn-mute'), party: $('party'), confetti: $('confetti'), fallback: $('fallback'), fallbackImg: $('fallback-img'),
+  muteBtn: $('btn-mute'), backBtn: $('btn-back'), party: $('party'), confetti: $('confetti'), fallback: $('fallback'), fallbackImg: $('fallback-img'),
 };
 
 export const state = {
   screen: 'shape', shape: 'round', skin: 1, hand: null, layers: [],
   tool: 'brush', color: 0, sticker: 0, activeNail: -1, last: null, clearArmed: false,
   muted: false, dirty: true, frames: 0,
+  zoomNail: -1, animating: false,
 };
-const view = { scale: 1, ox: 0, oy: 0, dpr: 1 };
+const view = { scale: 1, ox: 0, oy: 0, dpr: 1, w: 0, h: 0 };
+let animToken = 0;
 
 // ---------- screens ----------
 function showScreen(name) {
@@ -87,9 +89,15 @@ function startSalon(shape) {
   state.shape = shape;
   state.hand = buildHand(shape);
   state.frames = 0;
+  state.zoomNail = -1;
+  state.animating = false;
+  animToken++;
+  els.backBtn.hidden = true;
   showScreen('salon');
   fitCanvas();
-  const layerDpr = Math.min(4, Math.max(1, Math.ceil(view.scale * view.dpr)));
+  // layers must stay crisp at the zoomed-in scale
+  const zoomScale = Math.max(...state.hand.nails.map((_, i) => nailView(i).scale));
+  const layerDpr = Math.min(6, Math.max(1, Math.ceil(zoomScale * view.dpr)));
   state.layers = state.hand.nails.map(n => new NailLayer(n, layerDpr));
   state.activeNail = -1;
   state.dirty = true;
@@ -117,10 +125,47 @@ function fitCanvas() {
   if (w === els.hand.width && h === els.hand.height) return;
   els.hand.width = w;
   els.hand.height = h;
-  view.scale = Math.min(r.width / LOGICAL_W, r.height / LOGICAL_H);
-  view.ox = (r.width - LOGICAL_W * view.scale) / 2;
-  view.oy = r.height - LOGICAL_H * view.scale; // bottom-align the hand
+  view.w = r.width; view.h = r.height;
+  Object.assign(view, state.zoomNail >= 0 ? nailView(state.zoomNail) : homeView());
   state.dirty = true;
+}
+
+// Whole hand, bottom-aligned, as large as the stage allows.
+function homeView() {
+  const scale = Math.min(view.w / LOGICAL_W, view.h / LOGICAL_H);
+  return { scale, ox: (view.w - LOGICAL_W * scale) / 2, oy: view.h - LOGICAL_H * scale };
+}
+
+// One nail filling most of the stage, with a little finger around it.
+function nailView(i) {
+  const { x, y, w, h } = state.hand.nails[i].rect;
+  const padX = w * 0.45, padY = h * 0.3;
+  const rw = w + padX * 2, rh = h + padY * 2;
+  const scale = Math.min(view.w / rw, view.h / rh);
+  return { scale, ox: view.w / 2 - (x + w / 2) * scale, oy: view.h / 2 - (y + h / 2) * scale };
+}
+
+function zoomTo(i, ms = 320) {
+  state.zoomNail = i;
+  els.backBtn.hidden = i < 0;
+  state.activeNail = -1;
+  const from = { scale: view.scale, ox: view.ox, oy: view.oy };
+  const to = i >= 0 ? nailView(i) : homeView();
+  const token = ++animToken;
+  const t0 = performance.now();
+  state.animating = true;
+  function step(now) {
+    if (token !== animToken) return;
+    const t = Math.min(1, (now - t0) / ms);
+    const k = 1 - Math.pow(1 - t, 3); // ease out
+    view.scale = from.scale + (to.scale - from.scale) * k;
+    view.ox = from.ox + (to.ox - from.ox) * k;
+    view.oy = from.oy + (to.oy - from.oy) * k;
+    state.dirty = true;
+    if (t < 1) requestAnimationFrame(step);
+    else state.animating = false;
+  }
+  requestAnimationFrame(step);
 }
 
 function toLogical(e) {
@@ -198,6 +243,7 @@ function armClear(on) {
 
 els.hand.addEventListener('pointerdown', e => {
   e.preventDefault();
+  if (state.animating) return;
   const p = toLogical(e);
   const i = hitNail(state.hand, p.x, p.y);
   if (state.clearArmed) {
@@ -206,6 +252,7 @@ els.hand.addEventListener('pointerdown', e => {
     return;
   }
   if (i < 0) return;
+  if (i !== state.zoomNail) { pop(); zoomTo(i); return; } // whole hand or a neighbour: zoom to it
   els.hand.setPointerCapture(e.pointerId);
   state.activeNail = i;
   state.last = p;
@@ -264,6 +311,7 @@ function showParty() {
   els.tray.hidden = true;
   armClear(false);
   state.activeNail = -1;
+  if (state.zoomNail >= 0) zoomTo(-1);
   els.party.hidden = false;
   els.salon.classList.add('partying');
   startConfetti(3);
@@ -318,6 +366,7 @@ async function sharePhoto() {
 
 // ---------- wiring ----------
 $('btn-home').addEventListener('click', () => showScreen('shape'));
+els.backBtn.addEventListener('click', () => { if (!state.animating) zoomTo(-1); });
 els.toolButtons.forEach(b => b.addEventListener('click', () => {
   armClear(false);
   if (b.dataset.tool === 'sticker') els.tray.hidden = !els.tray.hidden;

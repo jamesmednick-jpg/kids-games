@@ -72,6 +72,13 @@ are decorative.
   Done (checkmark).
 - Over the hand: Home (top left, back to shape picker) and mute toggle
   (top right).
+- Tap-to-zoom (added 2026-09-09): the whole-hand view is the finger picker
+  and does not paint. Tapping a nail animates the view (about 320 ms) until
+  that nail fills most of the stage. Painting, glitter, stickers, and clear
+  happen zoomed in. A large hand button at the bottom left of the stage
+  zooms back out. Done zooms out first so the celebration shows the whole
+  hand. On screens wider than a phone the game sits in a centered column
+  no wider than 480 px, with swatches capped at 64 px.
 - Stickers button opens a tray above the tool row with eight stickers.
   Tapping a sticker selects it and closes the tray; the Stickers button
   shows the selected sticker.
