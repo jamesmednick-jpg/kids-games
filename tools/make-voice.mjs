@@ -61,6 +61,15 @@ export function buildPhrases(max) {
   }
 
   out.push(narrated('join', `Let's count them all!`));
+
+  // Add-mode challenges: the ask, and the answer said plainly. Sums to ten.
+  const Cap = w => w[0].toUpperCase() + w.slice(1);
+  for (let a = 1; a <= 9; a++) {
+    for (let b = a; a + b <= 10; b++) {
+      out.push(narrated(`add-${a}-${b}`, `Can you put ${Cap(word(a))} and ${Cap(word(b))} together, to make ${Cap(word(a + b))}?`));
+      out.push(narrated(`sum-${a}-${b}`, `[[emph +]] ${Cap(word(a))} and ${Cap(word(b))} makes ${Cap(word(a + b))}!`, { rate: NARRATOR.rate - 10 }));
+    }
+  }
   // Flying through the air.
   ['Wheeeeeeee!', 'Whoooooa!'].forEach((text, i) =>
     out.push(narrated(`fall-${i + 1}`, `[[emph +]] ${text}`, { pbas: NARRATOR.pbas + 10, rate: NARRATOR.rate - 25 })));

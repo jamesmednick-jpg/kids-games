@@ -32,6 +32,7 @@ export async function initAudio() {
 }
 
 export function setMuted(m) { muted = !!m; }
+export function hasClip(id) { return !!(clips && clips[id]); }
 export function isMuted() { return muted; }
 
 async function buffer(id) {

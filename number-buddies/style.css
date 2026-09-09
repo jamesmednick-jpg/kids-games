@@ -128,6 +128,14 @@ button { font: inherit; border: 0; background: none; cursor: pointer; }
 
 /* ---------- add ---------- */
 #screen-add { display: grid; grid-template-rows: 1fr auto; padding: 84px 12px 24px; gap: 8px; }
+/* The answer waits as a ghost behind the plus; when they come together the result lands on it. */
+#add-target { position: absolute; left: 0; right: 0; top: 84px; bottom: 124px; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; pointer-events: none; z-index: 0; }
+#add-target.ghost .cube { opacity: 0.16; box-shadow: none; }
+#add-target.ghost .cube::after { display: none; }
+#add-target.ghost .sign { opacity: 0.35; }
+#add-target.ghost .feature-holder, #add-target .arms { display: none; }
+#add-target.matched .cube { opacity: 0.45; animation: shimmer 800ms ease-out; }
+.add-row, #add-result { position: relative; z-index: 1; }
 .add-row { display: flex; align-items: flex-end; justify-content: space-evenly; min-height: 0; height: 100%; }
 #add-plus { font-size: 48px; font-weight: 800; color: #5b4636; padding-bottom: 8px; }
 .draggable { touch-action: none; transition: transform 160ms ease; cursor: grab; }
@@ -172,6 +180,22 @@ button { font: inherit; border: 0; background: none; cursor: pointer; }
 #play-board[data-world="rainbow"] .ground { background: linear-gradient(#f4c26b, #d9a24a); }
 #play-board[data-world="night"] { background: linear-gradient(#0f1440, #2a2f7a 70%, #3d3f8f); }
 #play-board[data-world="night"] .ground { background: linear-gradient(#3a3f7a, #24285a); box-shadow: inset 0 3px 0 #5a5fa8; }
+#play-board[data-world="castle"] { background: linear-gradient(#ffd6ec, #e9d5ff 60%, #fff0f7); }
+#play-board[data-world="castle"] .ground { background: linear-gradient(#c9b7e8, #a892d1); box-shadow: inset 0 4px 0 #e2d6f5; }
+.castle-keep { left: 18%; right: 18%; bottom: 36px; height: 34%; background: linear-gradient(#f4dff9, #dcc3f0); border-radius: 6px 6px 0 0; box-shadow: inset 0 -10px 0 rgba(0,0,0,0.05); }
+.castle-keep::before { content: ''; position: absolute; left: 0; right: 0; top: -14px; height: 14px; background: repeating-linear-gradient(90deg, #dcc3f0 0 16px, transparent 16px 28px); }
+.castle-keep::after { content: ''; position: absolute; left: 42%; right: 42%; bottom: 0; height: 46%; background: #b58ed9; border-radius: 40px 40px 0 0; }
+.castle-tower { bottom: 36px; width: 12%; height: 52%; background: linear-gradient(90deg, #f7e6fb, #d9bdf0); border-radius: 4px 4px 0 0; }
+.castle-tower::before { content: ''; position: absolute; left: -18%; right: -18%; top: -26%; height: 30%; background: #ec4899; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.castle-tower::after { content: ''; position: absolute; left: 50%; top: -44%; width: 3px; height: 20%; background: #5b4636; box-shadow: 4px 2px 0 6px #ffd23f; }
+.castle-tower-tall { left: 44%; height: 62%; }
+.twinkle { width: 10px; height: 10px; background: #fff; clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); animation: twinkle-star 2.2s ease-in-out infinite; filter: drop-shadow(0 0 4px #ffd23f); }
+@keyframes twinkle-star { 0%, 100% { transform: scale(0.5); opacity: 0.4; } 50% { transform: scale(1.3); opacity: 1; } }
+.platform.castle { background: linear-gradient(#e9dbf7, #c9b0e6); border-radius: 6px; box-shadow: inset 0 4px 0 #f6ecfc; }
+.platform.castle::before { content: ''; position: absolute; left: 0; right: 0; top: -10px; height: 10px; background: repeating-linear-gradient(90deg, #c9b0e6 0 12px, transparent 12px 22px); }
+.preview.castle { background: linear-gradient(#ffd6ec, #e9d5ff); }
+.preview.castle::before { content: ''; position: absolute; left: 22%; right: 22%; bottom: 0; height: 40%; background: #dcc3f0; border-radius: 4px 4px 0 0; }
+.preview.castle::after { content: ''; position: absolute; left: 44%; right: 44%; bottom: 40%; height: 30%; background: #ec4899; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
 #play-board[data-world="night"] .sign { box-shadow: 0 0 12px rgba(255, 245, 194, 0.6), 0 3px 0 rgba(0,0,0,0.3); }
 
 .sun { right: 8%; top: 6%; width: 74px; height: 74px; border-radius: 50%; background: #ffd23f; box-shadow: 0 0 40px rgba(255, 210, 63, 0.7); animation: sunspin 40s linear infinite; }

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   MAX_SUPPORTED, COLORS, FEATURES, towerParts, joinTowers, splitTower, cubeSize,
-  characterPitch, characterRate, countPitch, makeTargetBag, makeAddBag,
+  characterPitch, characterRate, countPitch, makeTargetBag, makeAddBag, makeChallengeBag,
 } from '../../number-buddies/blocks.js';
 
 test('every number 1..10 has a colour and a feature', () => {
@@ -129,4 +129,25 @@ test('bags are deterministic given a seeded rng', () => {
   const a = makeTargetBag(10, seeded());
   const b = makeTargetBag(10, seeded());
   for (let i = 0; i < 20; i++) assert.equal(a.next(), b.next(), `draw ${i}`);
+});
+
+test('challenges always start with one and one', () => {
+  for (let i = 0; i < 5; i++) assert.deepEqual(makeChallengeBag(10).next(), { a: 1, b: 1 });
+});
+
+test('challenges ramp gently: small sums before big ones, never past the maximum', () => {
+  const bag = makeChallengeBag(10);
+  const sums = Array.from({ length: 25 }, () => { const { a, b } = bag.next(); return a + b; });
+  assert.ok(sums.every(n => n >= 2 && n <= 10));
+  const firstBig = sums.findIndex(n => n > 7);
+  const lastSmall = sums.length - 1 - [...sums].reverse().findIndex(n => n <= 4);
+  assert.ok(lastSmall < firstBig, 'every small sum comes before any big one');
+});
+
+test('challenges cover every pair before repeating, then start over', () => {
+  const bag = makeChallengeBag(10);
+  const seen = new Set();
+  for (let i = 0; i < 25; i++) { const { a, b } = bag.next(); seen.add(`${Math.min(a, b)}+${Math.max(a, b)}`); }
+  assert.equal(seen.size, 25, 'all 25 unordered pairs with sums 2..10');
+  assert.deepEqual(bag.next(), { a: 1, b: 1 }, 'round two begins at the beginning');
 });

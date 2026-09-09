@@ -28,6 +28,10 @@ test('the phrase list covers every clip the game asks for', () => {
   for (let i = 1; i <= 4; i++) assert.ok(ids.has(`cheer-${i}`), `cheer-${i}`);
   for (let i = 1; i <= 3; i++) assert.ok(ids.has(`pickup-${i}`), `pickup-${i}`);
   for (let i = 1; i <= 2; i++) assert.ok(ids.has(`fall-${i}`), `fall-${i}`);
+  for (let a = 1; a <= 9; a++) for (let b = a; a + b <= 10; b++) {
+    assert.ok(ids.has(`add-${a}-${b}`), `add-${a}-${b}`);
+    assert.ok(ids.has(`sum-${a}-${b}`), `sum-${a}-${b}`);
+  }
 });
 
 test('clip ids are unique', () => {

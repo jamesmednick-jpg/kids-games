@@ -1,6 +1,6 @@
-import { makeAddBag } from './blocks.js';
+import { makeChallengeBag } from './blocks.js';
 import { drawBuddy, cubeSizeFor, celebrate as dance, popFace, stars, sparks, flash, clearFx } from './render.js';
-import { say, sayAll, clunk, ding, sparkle, fanfare } from './audio.js';
+import { say, sayAll, clunk, ding, sparkle, fanfare, hasClip } from './audio.js';
 import { makeNudge } from './nudge.js';
 import { makeHold } from './hold.js';
 
@@ -17,9 +17,11 @@ export function mountAdd(host, { max, nudgeMs }) {
   const plusEl = $('#add-plus');
   const rowEl = $('.add-row');
   const resultEl = $('#add-result');
+  const targetEl = $('#add-target');
   const againEl = $('#add-again');
 
-  const bag = makeAddBag(max);
+  const bag = makeChallengeBag(max);
+  const pairId = (a, b) => `${Math.min(a, b)}-${Math.max(a, b)}`;
   const state = { a: 0, b: 0, merged: false };
   let size = 0;                 // one cube size for both buddies and their sum
   let drag = null;
@@ -47,6 +49,11 @@ export function mountAdd(host, { max, nudgeMs }) {
     drawBuddy(aEl, state.a, { size });
     drawBuddy(bEl, state.b, { size });
     for (const el of [aEl, bEl]) { el.classList.remove('merging', 'beckon'); el.style.transform = ''; }
+    // A faded ghost of the answer waits in the middle.
+    drawBuddy(targetEl, state.a + state.b, { size, faces: false });
+    targetEl.classList.add('ghost');
+    targetEl.classList.remove('matched');
+    targetEl.hidden = false;
   }
 
   // The other buddy jiggles toward the one she is bringing, with sparkles
@@ -72,9 +79,13 @@ export function mountAdd(host, { max, nudgeMs }) {
     nudge.poke();
   }
 
+  // The challenge: "Can you put One and One together, to make Two?" Above
+  // ten there is no recorded sentence, so the plain "Can you make N?" stands in.
   function nextPair() {
     const { a, b } = bag.next();
     setPair(a, b);
+    const ask = `add-${pairId(a, b)}`;
+    say(hasClip(ask) ? ask : `make-${a + b}`);
   }
 
   // The show's signature beat, in four moves: the buddies slide into the
@@ -109,6 +120,7 @@ export function mountAdd(host, { max, nudgeMs }) {
 
     // 3. the sum, counted from one, glittering the whole time
     rowEl.hidden = true;
+    targetEl.classList.add('matched');
     resultEl.hidden = false;
     let buddy = drawBuddy(resultEl, total, { size, faces: false });
     const glitter = setInterval(() => {
@@ -130,13 +142,14 @@ export function mountAdd(host, { max, nudgeMs }) {
     }
     clearInterval(glitter);
 
-    // 4. alive
+    // 4. alive — and the lesson, said plainly: "Two and Three makes Five!"
     buddy = drawBuddy(resultEl, total, { size });
     popFace(buddy);
     dance(host, buddy, total);
     fanfare();
     againEl.hidden = false;
-    await sayAll([`is-${total}`, `cheer-${1 + Math.floor(Math.random() * 4)}`]);
+    const sum = `sum-${pairId(state.a, state.b)}`;
+    await sayAll([...(hasClip(sum) ? [sum] : []), `is-${total}`, `cheer-${1 + Math.floor(Math.random() * 4)}`]);
   }
 
   // Drag either buddy toward the other. Releasing anywhere near the middle

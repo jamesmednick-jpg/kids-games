@@ -26,10 +26,10 @@ const freeX = page => page.evaluate(() => {
 });
 const settled = page => page.waitForFunction(() => window.__nb.play.state.towers.every(t => t.resting), null, { timeout: 5000 });
 
-test('Play opens on a picker of four worlds, all available', async ({ page }) => {
+test('Play opens on a picker of five worlds, all available', async ({ page }) => {
   await openPlay(page, null);
-  await expect(page.locator('#play-picker [data-world]')).toHaveCount(4);
-  for (const w of ['meadow', 'clouds', 'rainbow', 'night']) {
+  await expect(page.locator('#play-picker [data-world]')).toHaveCount(5);
+  for (const w of ['meadow', 'clouds', 'rainbow', 'night', 'castle']) {
     const tile = page.locator(`[data-world="${w}"]`);
     await expect(tile).toBeVisible();
     expect(await tile.evaluate(el => el.disabled || el.classList.contains('locked'))).toBeFalsy();
@@ -50,7 +50,18 @@ test('the worlds button returns to the picker and keeps every world open', async
   await openPlay(page, 'night');
   await page.click('#play-worlds');
   await expect(page.locator('#play-picker')).toBeVisible();
-  await expect(page.locator('#play-picker [data-world]')).toHaveCount(4);
+  await expect(page.locator('#play-picker [data-world]')).toHaveCount(5);
+});
+
+test('the Castle has a castle, battlements to stand on, and sparkles', async ({ page }) => {
+  await openPlay(page, 'castle');
+  expect(await page.locator('#play-board .castle-keep').count()).toBeGreaterThan(0);
+  expect(await page.locator('#play-board .platform.castle').count()).toBeGreaterThanOrEqual(3);
+  expect(await page.locator('#play-board .twinkle').count()).toBeGreaterThan(3);
+  const p = await page.evaluate(() => window.__nb.play.state.platforms[0]);
+  await page.evaluate(([x, y]) => window.__nb.play.addTower(2, x, y), [p.left + p.width / 2 - 20, p.top + 200]);
+  await settled(page);
+  expect((await page.evaluate(() => window.__nb.play.state.towers[0])).y).toBeCloseTo(p.top, 0);
 });
 
 test('a cube from the bin drops in and lands on the ground', async ({ page }) => {

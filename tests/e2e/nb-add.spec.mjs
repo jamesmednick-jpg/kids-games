@@ -17,6 +17,39 @@ async function dragTogether(page) {
   await page.mouse.up();
 }
 
+test('the first challenge is always One and One, asked out loud, with a ghost of the answer', async ({ page }) => {
+  await page.goto('/number-buddies/index.html');
+  await page.click('[data-mode="add"]');
+  await page.waitForFunction(() => window.__nb.add && window.__nb.add.state.a > 0);
+  const { a, b } = await page.evaluate(() => window.__nb.add.state);
+  expect([a, b]).toEqual([1, 1]);
+  expect(await page.evaluate(() => window.__nb.spoken)).toContain('add-1-1');
+  await expect(page.locator('#add-target.ghost .cube')).toHaveCount(2);
+  await expect(page.locator('#add-target .sign')).toHaveText('2');
+});
+
+test('after they come together, the sum is said out loud and the ghost fills in', async ({ page }) => {
+  await openAdd(page, 2, 3);
+  await page.click('#add-a');
+  await page.waitForFunction(() => window.__nb.spoken.includes('is-5'), null, { timeout: 15000 });
+  const spoken = await page.evaluate(() => window.__nb.spoken);
+  expect(spoken.indexOf('sum-2-3')).toBeGreaterThan(spoken.indexOf('count-5'));
+  expect(spoken.indexOf('sum-2-3')).toBeLessThan(spoken.indexOf('is-5'));
+  await expect(page.locator('#add-target.matched')).toHaveCount(1);
+});
+
+test('challenges ramp: the first few sums are small', async ({ page }) => {
+  await page.goto('/number-buddies/index.html');
+  await page.click('[data-mode="add"]');
+  await page.waitForFunction(() => window.__nb.add && window.__nb.add.state.a > 0);
+  const sums = [];
+  for (let i = 0; i < 4; i++) {          // four challenges have sums of four or less
+    sums.push(await page.evaluate(() => window.__nb.add.state.a + window.__nb.add.state.b));
+    await page.evaluate(() => window.__nb.add.nextPair());
+  }
+  expect(Math.max(...sums)).toBeLessThanOrEqual(4);
+});
+
 test('two buddies stand apart with a plus between them', async ({ page }) => {
   await openAdd(page, 2, 3);
   expect(await page.locator('#add-a .cube').count()).toBe(2);

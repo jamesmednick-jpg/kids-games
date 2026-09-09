@@ -85,3 +85,26 @@ export function makeAddBag(max, rng = Math.random) {
   }
   return makeBag(items, rng, (x, y) => !!y && x.a === y.a && x.b === y.b);
 }
+
+// Add-mode challenges: always One and One first, then every pair in a gentle
+// ramp — small sums, then middling, then big — shuffled within each step so
+// the order is never the same twice, and round again when they run out.
+export function makeChallengeBag(max, rng = Math.random) {
+  const tiers = [[], [], []];
+  for (let a = 1; a <= max - 1; a++) {
+    for (let b = a; a + b <= max; b++) {
+      if (a === 1 && b === 1) continue;
+      const sum = a + b;
+      tiers[sum <= 4 ? 0 : sum <= 7 ? 1 : 2].push({ a, b });
+    }
+  }
+  let queue = [];
+  const refill = () => { queue = [{ a: 1, b: 1 }, ...tiers.flatMap(t => shuffle(t, rng))]; };
+  return {
+    next() {
+      if (!queue.length) refill();
+      const { a, b } = queue.shift();
+      return rng() < 0.5 ? { a, b } : { a: b, b: a };   // either side can be the bigger one
+    },
+  };
+}
