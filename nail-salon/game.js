@@ -349,6 +349,21 @@ buildPalette();
 showScreen('shape');
 requestAnimationFrame(render);
 
+// ---------- kid-proofing ----------
+document.addEventListener('gesturestart', e => e.preventDefault());
+document.addEventListener('contextmenu', e => { if (!e.target.closest('#fallback')) e.preventDefault(); });
+document.addEventListener('touchmove', e => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+let lastTouchEnd = 0;
+document.addEventListener('touchend', e => {
+  const now = Date.now();
+  if (now - lastTouchEnd < 300 && !e.target.closest('button')) e.preventDefault(); // no double-tap zoom
+  lastTouchEnd = now;
+}, { passive: false });
+
+if ('serviceWorker' in navigator && !['localhost', '127.0.0.1'].includes(location.hostname)) {
+  navigator.serviceWorker.register('./sw.js').catch(err => console.warn('sw failed', err));
+}
+
 // ---------- test hooks ----------
 window.__salon = {
   state, PALETTE, STICKERS, SKIN_TONES,
