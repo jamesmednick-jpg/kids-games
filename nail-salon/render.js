@@ -74,11 +74,11 @@ export function drawHand(ctx, hand, skin) {
   ctx.save();
   ctx.clip(P);
   // one light source: soft highlight on the left, shadow on the right
-  const g = ctx.createLinearGradient(40, 0, 560, 0);
-  g.addColorStop(0, 'rgba(255,255,255,0.17)');
-  g.addColorStop(0.34, 'rgba(255,255,255,0)');
-  g.addColorStop(0.64, 'rgba(120,50,60,0)');
-  g.addColorStop(1, 'rgba(120,50,60,0.15)');
+  const g = ctx.createLinearGradient(50, 0, 545, 0);
+  g.addColorStop(0, 'rgba(255,255,255,0.15)');
+  g.addColorStop(0.36, 'rgba(255,255,255,0)');
+  g.addColorStop(0.66, 'rgba(120,50,60,0)');
+  g.addColorStop(1, 'rgba(120,50,60,0.13)');
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, 600, 810);
   // warmth across the back of the hand
@@ -98,15 +98,23 @@ export function drawHand(ctx, hand, skin) {
     right.moveTo(a.R.x, a.R.y);
     right.quadraticCurveTo(e.cR.x, e.cR.y, e.tipR.x, e.tipR.y);
     // these hug the silhouette's own edges, so they can never seam inside it
-    ctx.strokeStyle = 'rgba(255,255,255,0.20)'; ctx.lineWidth = f.wt * 0.30; ctx.stroke(left);
-    ctx.strokeStyle = 'rgba(120,50,60,0.09)';  ctx.lineWidth = f.wt * 0.46; ctx.stroke(right);
-    ctx.strokeStyle = 'rgba(120,50,60,0.08)';  ctx.lineWidth = f.wt * 0.20; ctx.stroke(right);
-    // knuckle creases
+    ctx.strokeStyle = 'rgba(255,255,255,0.16)'; ctx.lineWidth = f.wt * 0.26; ctx.stroke(left);
+    ctx.strokeStyle = 'rgba(120,50,60,0.07)';  ctx.lineWidth = f.wt * 0.50; ctx.stroke(right);
+    ctx.strokeStyle = 'rgba(120,50,60,0.06)';  ctx.lineWidth = f.wt * 0.22; ctx.stroke(right);
+    // a soft sheen down the middle of the finger
     const { u, n } = fingerFrame(f);
-    ctx.strokeStyle = 'rgba(120,55,65,0.13)';
-    ctx.lineWidth = 2.4;
-    for (const t of [0.42, 0.72]) {
-      const c = axisPoint(f, t), hw = widthAt(f, t) * 0.30;
+    const a0 = axisPoint(f, 0.1), a1 = axisPoint(f, 0.95);
+    const sheen = new Path2D();
+    sheen.moveTo(a0.x - n.x * 3, a0.y - n.y * 3);
+    sheen.lineTo(a1.x - n.x * 3, a1.y - n.y * 3);
+    ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+    ctx.lineWidth = f.wt * 0.42;
+    ctx.stroke(sheen);
+    // knuckles: barely there, just enough to read as a hand
+    ctx.strokeStyle = 'rgba(120,55,65,0.075)';
+    ctx.lineWidth = 2.2;
+    for (const t of [0.44, 0.73]) {
+      const c = axisPoint(f, t), hw = widthAt(f, t) * 0.26;
       ctx.beginPath();
       ctx.moveTo(c.x - n.x * hw, c.y - n.y * hw);
       ctx.quadraticCurveTo(c.x + u.x * 3, c.y + u.y * 3, c.x + n.x * hw, c.y + n.y * hw);
@@ -128,8 +136,8 @@ export function drawHand(ctx, hand, skin) {
 
   ctx.save();
   ctx.strokeStyle = shade(skin, -0.26);
-  ctx.globalAlpha = 0.5;
-  ctx.lineWidth = 2.5;
+  ctx.globalAlpha = 0.42;
+  ctx.lineWidth = 2.2;
   ctx.lineJoin = 'round';
   ctx.stroke(P);
   ctx.restore();

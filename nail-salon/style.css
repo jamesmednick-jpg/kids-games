@@ -34,6 +34,9 @@ button:active { transform: translateY(2px); box-shadow: 0 1px 0 #e8a2b8; }
 #tray, #rings { grid-template-columns: repeat(4, minmax(0, 64px)); }
 #rings button { padding: 3px; }
 #rings canvas { width: 100%; height: 100%; display: block; }
+#ring-ghost { position: fixed; left: 0; top: 0; width: 96px; height: 96px; pointer-events: none;
+  z-index: 60; filter: drop-shadow(0 6px 8px rgba(120,40,60,0.35)); }
+#ring-ghost[hidden] { display: none; }
 #tray button { min-width: 0; min-height: 0; width: 100%; height: 100%; font-size: 36px; }
 #tray button.selected, #rings button.selected { background: #fff3b0; box-shadow: 0 0 0 3px #b5179e, 0 3px 0 #e8a2b8; }
 /* very short screens (a small phone with browser toolbars showing): smaller swatches rather than clipped ones */

@@ -1,4 +1,4 @@
-import { SHAPES, LOGICAL_W, LOGICAL_H, buildHand, hitNail, hitNailLoose, hitFinger, axisPoint, interpolate, pointInPolygon } from './geometry.js';
+import { SHAPES, LOGICAL_W, LOGICAL_H, buildHand, hitNail, hitNailLoose, hitFinger, axisPoint, widthAt, interpolate, pointInPolygon } from './geometry.js';
 import { drawScene, drawBrush, brushHandleCenter, drawRingAt, RINGS } from './render.js';
 import { NailLayer } from './paint.js';
 import { initAudio, setMuted, pop, tinkle, chime } from './audio.js';
@@ -19,7 +19,7 @@ const els = {
   shape: $('screen-shape'), salon: $('screen-salon'), skins: $('skins'), tiles: $('tiles'),
   stage: $('stage'), hand: $('hand'), palette: $('palette'), tray: $('tray'),
   toolButtons: [...document.querySelectorAll('#tools .tool[data-tool]')],
-  rings: $('rings'), stickerBtn: $('tool-sticker'), clearBtn: $('tool-clear'),
+  rings: $('rings'), ghost: $('ring-ghost'), stickerBtn: $('tool-sticker'), clearBtn: $('tool-clear'),
   muteBtn: $('btn-mute'), backBtn: $('btn-back'), party: $('party'), confetti: $('confetti'), fallback: $('fallback'), fallbackImg: $('fallback-img'),
 };
 
@@ -27,7 +27,7 @@ export const state = {
   screen: 'shape', shape: 'round', skin: 1, hand: null, layers: [],
   tool: 'brush', color: 0, sticker: 0, activeNail: -1, last: null, clearArmed: false,
   muted: false, dirty: true, frames: 0,
-  zoomNail: -1, animating: false, ring: 0, rings: [-1, -1, -1, -1, -1],
+  zoomNail: -1, animating: false, ring: 0, rings: [-1, -1, -1, -1, -1], ringPreview: -1,
   cursor: null, // { x, y, mouse } in logical coords while a pointer is over the hand
 };
 const TAP_MARGIN = 28; // logical px of forgiveness when picking a finger
@@ -79,7 +79,7 @@ function drawTile(canvas, shape) {
   ctx.scale(dpr, dpr);
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, r.width, r.height);
   // show the finger region
-  const region = { x: 30, y: 95, w: 520, h: 460 };
+  const region = { x: 30, y: 65, w: 520, h: 490 };
   const s = Math.min(r.width / region.w, r.height / region.h);
   ctx.translate((r.width - region.w * s) / 2, (r.height - region.h * s) / 2);
   ctx.scale(s, s);
@@ -201,6 +201,13 @@ function render() {
     ctx.translate(view.ox, view.oy);
     ctx.scale(view.scale, view.scale);
     drawScene(ctx, state.hand, SKIN_TONES[state.skin], state.layers, state.rings);
+    if (state.ringPreview >= 0) {
+      const f = state.hand.fingers[state.ringPreview];
+      const q = axisPoint(f, f.ringT);
+      ctx.globalAlpha = 0.6;
+      drawRingAt(ctx, q.x, q.y, f.angle, widthAt(f, f.ringT), RINGS[state.ring]);
+      ctx.globalAlpha = 1;
+    }
     if (brushShown()) {
       const n = state.hand.nails[state.zoomNail >= 0 ? state.zoomNail : 2];
       drawBrush(ctx, state.cursor.x, state.cursor.y, n.rect.w, PALETTE[state.color]);
@@ -252,7 +259,13 @@ function buildRings() {
     b.classList.toggle('selected', i === state.ring);
     const c = document.createElement('canvas');
     b.append(c);
-    b.addEventListener('click', () => { state.ring = i; buildRings(); selectTool('ring'); });
+    b.addEventListener('click', () => {
+      if (ringDrag && ringDrag.moved) return;          // a drag already handled this
+      state.ring = i;
+      buildRings();
+      selectTool('ring');
+    });
+    b.addEventListener('pointerdown', e => startRingDrag(e, i));
     els.rings.append(b);
     requestAnimationFrame(() => drawRingPreview(c, style));
   });
@@ -271,6 +284,77 @@ function drawRingPreview(canvas, style) {
   ctx.roundRect(r.width / 2 - r.width * 0.17, r.height * 0.1, r.width * 0.34, r.height * 0.85, r.width * 0.17);
   ctx.fill();
   drawRingAt(ctx, r.width / 2, r.height * 0.62, 0, r.width * 0.36, style);
+}
+
+// Rings are dragged out of the strip and dropped onto a finger. A plain tap
+// on a finger still works, so either way of thinking about it succeeds.
+let ringDrag = null;
+
+function startRingDrag(e, i) {
+  if (ringDrag || e.button > 0) return;
+  ringDrag = { ring: i, id: e.pointerId, x0: e.clientX, y0: e.clientY, moved: false };
+  window.addEventListener('pointermove', moveRingDrag);
+  window.addEventListener('pointerup', dropRing);
+  window.addEventListener('pointercancel', cancelRingDrag);
+}
+
+function moveRingDrag(e) {
+  if (!ringDrag || e.pointerId !== ringDrag.id) return;
+  if (!ringDrag.moved) {
+    if (Math.hypot(e.clientX - ringDrag.x0, e.clientY - ringDrag.y0) < 8) return;
+    ringDrag.moved = true;
+    state.ring = ringDrag.ring;
+    buildRings();
+    selectTool('ring');
+    paintGhost(ringDrag.ring);
+    els.ghost.hidden = false;
+  }
+  e.preventDefault();
+  els.ghost.style.transform = `translate(${e.clientX - 48}px, ${e.clientY - 62}px)`;
+  const over = fingerUnder(e);
+  if (over !== state.ringPreview) { state.ringPreview = over; state.dirty = true; }
+}
+
+function dropRing(e) {
+  if (!ringDrag || e.pointerId !== ringDrag.id) return;
+  const dragged = ringDrag.moved;
+  const over = dragged ? fingerUnder(e) : -1;
+  endRingDrag(e);
+  if (dragged && over >= 0) { applyRing(over); pop(); }
+}
+
+function cancelRingDrag(e) {
+  if (ringDrag && e.pointerId === ringDrag.id) endRingDrag(e);
+}
+
+function endRingDrag(e) {
+  window.removeEventListener('pointermove', moveRingDrag);
+  window.removeEventListener('pointerup', dropRing);
+  window.removeEventListener('pointercancel', cancelRingDrag);
+  els.ghost.hidden = true;
+  if (state.ringPreview !== -1) { state.ringPreview = -1; state.dirty = true; }
+  // cleared on the next frame so the button's click handler can see the drag
+  requestAnimationFrame(() => { ringDrag = null; });
+}
+
+// Which finger sits under a pointer event, in the whole-hand view.
+function fingerUnder(e) {
+  if (!state.hand || state.screen !== 'salon') return -1;
+  const r = els.hand.getBoundingClientRect();
+  if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return -1;
+  const p = toLogical(e);
+  return hitFinger(state.hand, p.x, p.y, 22);
+}
+
+function paintGhost(i) {
+  const c = els.ghost, dpr = window.devicePixelRatio || 1;
+  const size = 96;
+  c.width = Math.round(size * dpr);
+  c.height = Math.round(size * dpr);
+  const ctx = c.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, size, size);
+  drawRingAt(ctx, size / 2, size / 2, 0, size * 0.62, RINGS[i]);
 }
 
 function applyRing(i) {
@@ -507,6 +591,7 @@ window.__salon = {
     return toScreen(c.x, c.y);
   },
   RINGS,
+  ringDragging: () => !!(ringDrag && ringDrag.moved),
   ringPointScreen(i) {
     const f = state.hand.fingers[i];
     const p = axisPoint(f, f.ringT);

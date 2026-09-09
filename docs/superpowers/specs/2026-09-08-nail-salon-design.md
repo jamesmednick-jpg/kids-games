@@ -92,12 +92,23 @@ are decorative.
   Shading is one light source across the hand plus strokes that hug the
   silhouette's own edges, so no interior seam is possible. In the whole-hand
   view a tap within 28 logical px of a nail counts as that nail.
+- Styled after a salon-game reference (revised 2026-09-09): long slender
+  fingers with a clear taper, the visible middle finger about 0.87 of the
+  palm's length, and soft smooth shading with barely-there knuckles. Nails
+  are 0.92 of the fingertip's width and are measured DOWN from the fingertip
+  rather than up from a fixed gap, so a round or square nail ends level with
+  the fingertip and oval, almond and pointed nails reach past it by roughly
+  a third, 44 and 53 percent of their length.
 - Rings (added 2026-09-09): a ring tool whose strip offers 8 styles (plain
   gold, silver and rose bands, plus ruby, diamond, heart, emerald and pearl).
   Rings are worn on the whole hand, not a zoomed nail, so choosing the tool
   zooms out and a tap anywhere on a finger puts the chosen ring on it.
-  Tapping the same finger again takes it off, and the sponge cleans a
-  finger's nail and ring together. Rings are drawn under the nails and reach
+  A ring can be dragged out of the strip and dropped onto a finger: past an
+  8 px threshold a floating ring follows the touch, the finger underneath
+  previews the ring in place, and releasing over a finger puts it on while
+  releasing anywhere else just selects that style. A plain tap on a finger
+  still works too. Tapping the same finger again takes the ring off, and the
+  sponge cleans a finger's nail and ring together. Rings are drawn under the nails and reach
   the saved photo. Styles live in RINGS in `nail-salon/render.js`.
 - The whole-hand view is framed from the hand's measured extent rather than
   the logical page, so the hand fills the phone screen with no wasted margin.

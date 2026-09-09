@@ -7,12 +7,15 @@ export const LOGICAL_H = 800;
 // Tip profile per shape. f(t) maps t in [-1,1] (left edge to right edge)
 // to [0,1] where 0 is the very tip and 1 is where the tip meets the side.
 // tipH is how tall the tip region is. hScale lengthens the whole nail.
+// hScale lengthens the nail; over is how much of it reaches past the
+// fingertip, as a fraction of the nail's own height. Short shapes end at the
+// tip, long ones extend beyond it the way real long nails do.
 const TIP = {
-  square:  { f: t => Math.abs(t) ** 12,            tipH: w => w * 0.08, hScale: 1.0 },
-  round:   { f: t => 1 - Math.sqrt(1 - t * t),     tipH: w => w * 0.5,  hScale: 1.0 },
-  oval:    { f: t => 1 - Math.sqrt(1 - t * t),     tipH: w => w * 0.7,  hScale: 1.15 },
-  almond:  { f: t => Math.abs(t) ** 1.4,           tipH: w => w * 0.9,  hScale: 1.25 },
-  pointed: { f: t => Math.abs(t),                  tipH: w => w * 1.0,  hScale: 1.4 },
+  square:  { f: t => Math.abs(t) ** 12,            tipH: w => w * 0.08, hScale: 1.0,  over: 0.03 },
+  round:   { f: t => 1 - Math.sqrt(1 - t * t),     tipH: w => w * 0.5,  hScale: 1.0,  over: 0.04 },
+  oval:    { f: t => 1 - Math.sqrt(1 - t * t),     tipH: w => w * 0.7,  hScale: 1.24, over: 0.32 },
+  almond:  { f: t => Math.abs(t) ** 1.4,           tipH: w => w * 0.9,  hScale: 1.38, over: 0.44 },
+  pointed: { f: t => Math.abs(t),                  tipH: w => w * 1.0,  hScale: 1.52, over: 0.53 },
 };
 
 export function nailPolygon(shape, rect, samples = 24) {
@@ -83,24 +86,24 @@ const deg = d => (d * Math.PI) / 180;
 
 // Shared anchors on the silhouette. n1..n3 are the notches between fingers.
 const WEB = {
-  indexOuter: { x: 200, y: 432 },
-  n1: { x: 282, y: 416 },
-  n2: { x: 366, y: 410 },
-  n3: { x: 444, y: 442 },
-  pinkyOuter: { x: 509, y: 462 },
-  wristL: { x: 250, y: 802 },
-  wristR: { x: 442, y: 802 },
-  ctrlPalmL: { x: 228, y: 748 },   // wrist up to the thumb's outer root
-  ctrlThumbWeb: { x: 174, y: 492 },// the deep web between thumb and index
-  ctrlPalmR: { x: 548, y: 628 },   // pinky root down to the wrist
+  indexOuter: { x: 215, y: 450 },
+  n1: { x: 285, y: 432 },
+  n2: { x: 357, y: 430 },
+  n3: { x: 423, y: 450 },
+  pinkyOuter: { x: 479, y: 484 },
+  wristL: { x: 272, y: 802 },
+  wristR: { x: 438, y: 802 },
+  ctrlPalmL: { x: 248, y: 752 },   // wrist up to the thumb's outer root
+  ctrlThumbWeb: { x: 186, y: 505 },// the deep web between thumb and index
+  ctrlPalmR: { x: 498, y: 625 },   // pinky root down to the wrist
 };
 
 const FINGERS = [
-  { index: 0, name: 'thumb',  bx: 250, by: 646, len: 238, wb: 92, wt: 68, angle: deg(-44), ringT: 0.66, webT: 0.45 },
-  { index: 1, name: 'index',  bx: 241, by: 430, len: 272, wb: 81, wt: 62, angle: deg(-6),  ringT: 0.25, anchorL: WEB.indexOuter, anchorR: WEB.n1 },
-  { index: 2, name: 'middle', bx: 324, by: 425, len: 305, wb: 83, wt: 64, angle: deg(-1),  ringT: 0.24, anchorL: WEB.n1, anchorR: WEB.n2 },
-  { index: 3, name: 'ring',   bx: 405, by: 430, len: 280, wb: 75, wt: 58, angle: deg(5),   ringT: 0.25, anchorL: WEB.n2, anchorR: WEB.n3 },
-  { index: 4, name: 'pinky',  bx: 477, by: 455, len: 220, wb: 65, wt: 50, angle: deg(10),  ringT: 0.27, anchorL: WEB.n3, anchorR: WEB.pinkyOuter },
+  { index: 0, name: 'thumb',  bx: 258, by: 660, len: 258, wb: 71, wt: 55, angle: deg(-42), ringT: 0.66, webT: 0.45 },
+  { index: 1, name: 'index',  bx: 250, by: 448, len: 302, wb: 66, wt: 47, angle: deg(-8),   ringT: 0.25, anchorL: WEB.indexOuter, anchorR: WEB.n1 },
+  { index: 2, name: 'middle', bx: 321, by: 442, len: 333, wb: 68, wt: 49, angle: deg(-1.5), ringT: 0.24, anchorL: WEB.n1, anchorR: WEB.n2 },
+  { index: 3, name: 'ring',   bx: 390, by: 448, len: 310, wb: 62, wt: 45, angle: deg(6),    ringT: 0.25, anchorL: WEB.n2, anchorR: WEB.n3 },
+  { index: 4, name: 'pinky',  bx: 451, by: 478, len: 246, wb: 54, wt: 39, angle: deg(14),   ringT: 0.27, anchorL: WEB.n3, anchorR: WEB.pinkyOuter },
 ];
 
 // u runs from base to tip; n is across the finger, positive to its right.
@@ -150,11 +153,11 @@ export function buildHand(shape) {
 
   const nails = FINGERS.map((f, index) => {
     const { u } = fingerFrame(f);
-    const w = Math.round(f.wt * 0.82);
-    const baseH = Math.round(w * 1.15);
+    const w = Math.round(f.wt * 0.92);          // nearly as wide as the fingertip
+    const baseH = Math.round(w * 1.2);
     const h = Math.round(baseH * TIP[shape].hScale);
     const tip = fingerTip(f);
-    const back = 14 + baseH;                    // the cuticle sits inside the fingertip
+    const back = h * (1 - TIP[shape].over);     // the nail ends at the fingertip, or past it
     const pivot = { x: tip.x - u.x * back, y: tip.y - u.y * back };
     const rect = { x: pivot.x - w / 2, y: pivot.y - h, w, h };
     const points = nailPolygon(shape, rect).map(([x, y]) => rotatePoint(x, y, pivot.x, pivot.y, f.angle));
@@ -211,8 +214,10 @@ export function hitFinger(hand, x, y, margin = 14) {
   for (const f of hand.fingers) {
     const { u, n } = fingerFrame(f);
     const dx = x - f.bx, dy = y - f.by;
+    // a little slack past each end, but not so much that the thumb's root
+    // swallows the middle of the palm
     const t = (dx * u.x + dy * u.y) / f.len;
-    if (t < -0.25 || t > 1.12) continue;
+    if (t < -0.06 || t > 1.12) continue;
     const d = Math.abs(dx * n.x + dy * n.y) - widthAt(f, t) / 2;
     if (d <= margin && d < bestD) { bestD = d; best = f.index; }
   }

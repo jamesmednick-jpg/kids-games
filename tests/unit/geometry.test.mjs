@@ -85,11 +85,26 @@ test('buildHand has five nails inside the logical space and no overlaps', () => 
   }
 });
 
-test('longer shapes extend the nail upward, not downward', () => {
-  const round = buildHand('round').nails[1].rect;
-  const pointed = buildHand('pointed').nails[1].rect;
-  assert.equal(round.y + round.h, pointed.y + pointed.h);
-  assert.ok(pointed.y < round.y);
+test('a short nail ends at the fingertip and a long one reaches past it', () => {
+  const gap = shape => {
+    const hand = buildHand(shape);
+    return fingerTip(hand.fingers[2]).y - hand.nails[2].bounds.minY;   // + is past the tip
+  };
+  for (const shape of ['round', 'square']) {
+    const g = gap(shape);
+    assert.ok(Math.abs(g) < 8, `${shape} nail should end at the fingertip, off by ${g.toFixed(1)}`);
+  }
+  assert.ok(gap('oval') > 10, 'oval reaches past the fingertip');
+  assert.ok(gap('almond') > gap('oval'), 'almond is longer than oval');
+  assert.ok(gap('pointed') > gap('almond'), 'pointed is longest');
+});
+
+test('nails are nearly as wide as the fingertip they sit on', () => {
+  const hand = buildHand('round');
+  hand.nails.forEach((n, i) => {
+    const ratio = n.rect.w / hand.fingers[i].wt;
+    assert.ok(ratio > 0.8 && ratio < 0.95, `${n.finger} nail/finger width ${ratio.toFixed(2)}`);
+  });
 });
 
 test('hitNail finds the nail under a point and -1 elsewhere', () => {
@@ -136,7 +151,7 @@ test('hand proportions match a real hand: fingers are shorter than the palm', ()
   const visibleFinger = webY - tip.y;
   const palm = hand.web.wristL.y - webY;
   const ratio = visibleFinger / palm;
-  assert.ok(ratio > 0.6 && ratio < 0.95, `finger/palm ratio ${ratio.toFixed(2)} should be about 0.8`);
+  assert.ok(ratio > 0.7 && ratio < 1.0, `finger/palm ratio ${ratio.toFixed(2)} should be about 0.8`);
   // hand breadth across the four fingers is close to the palm's length
   const breadth = hand.web.pinkyOuter.x - hand.web.indexOuter.x;
   assert.ok(breadth / palm > 0.65 && breadth / palm < 1.0, `breadth/palm ${(breadth / palm).toFixed(2)}`);
@@ -173,5 +188,6 @@ test('hitFinger finds a finger anywhere along it and -1 on the palm', () => {
   });
   assert.equal(hitFinger(hand, 350, 700), -1);  // middle of the palm
   assert.equal(hitFinger(hand, 330, 760), -1);  // near the wrist
+  assert.equal(hitFinger(hand, 300, 700), -1);  // below the thumb's root, still palm
   assert.equal(hitFinger(hand, 580, 120), -1);  // empty corner
 });
