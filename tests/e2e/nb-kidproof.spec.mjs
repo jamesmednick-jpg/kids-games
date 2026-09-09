@@ -46,6 +46,7 @@ test('switching modes repeatedly leaves no stale towers', async ({ page }) => {
   expect(await page.locator('#build-tower .cube').count()).toBe(0);
   await page.click('#btn-home');
   await page.click('[data-mode="play"]');
+  await page.click('[data-world="meadow"]');
   expect(await page.locator('#play-board .tower').count()).toBe(0);
 });
 
@@ -67,19 +68,29 @@ test('the home tiles show real buddies, not emoji', async ({ page }) => {
   expect(await page.locator('[data-pic="play"] .buddy').count()).toBe(3);
 });
 
-test('a carried tower in Play stays on the table, sign and all', async ({ page }) => {
+test('a tower let go above the world falls back into it, sign and all', async ({ page }) => {
   await page.goto('/number-buddies/index.html');
   await page.click('[data-mode="play"]');
   await page.waitForFunction(() => window.__nb.play);
-  await page.evaluate(() => window.__nb.play.addTower(6, 100, 20));
+  await page.click('[data-world="meadow"]');
+  await page.waitForFunction(() => window.__nb.play.state.world === 'meadow');
+  const x = await page.evaluate(() => {
+    const W = document.getElementById('play-board').clientWidth, ps = window.__nb.play.state.platforms;
+    for (let x = W - 44; x >= 0; x -= 4) if (!ps.some(p => Math.min(p.left + p.width, x + 44) - Math.max(p.left, x) > 0)) return x;
+    return 0;
+  });
+  await page.evaluate(x => window.__nb.play.addTower(3, x, 0), x);
+  await page.waitForFunction(() => window.__nb.play.state.towers.every(t => t.resting));
   const t = await page.locator('#play-board .tower').boundingBox();
   await page.mouse.move(t.x + t.width / 2, t.y + t.height - 20);
   await page.mouse.down();
   await page.mouse.move(t.x + t.width / 2, 0, { steps: 8 });   // way past the top
   await page.mouse.up();
+  await page.waitForFunction(() => window.__nb.play.state.towers.every(t => t.resting), null, { timeout: 5000 });
   const board = await page.locator('#play-board').boundingBox();
   const sign = await page.locator('#play-board .sign').boundingBox();
   expect(sign.y).toBeGreaterThanOrEqual(board.y - 1);
+  expect(sign.y + sign.height).toBeLessThanOrEqual(board.y + board.height + 1);
 });
 
 test('nothing anywhere hard-codes ten in place of the parent setting', async ({ request }) => {

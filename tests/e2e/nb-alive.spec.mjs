@@ -122,6 +122,8 @@ test('in Play a held tower wriggles and sparkles, and still no confetti', async 
   await page.goto('/number-buddies/index.html');
   await page.click('[data-mode="play"]');
   await page.waitForFunction(() => window.__nb.play);
+  await page.click('[data-world="meadow"]');
+  await page.waitForFunction(() => window.__nb.play.state.world === 'meadow');
   await page.evaluate(() => window.__nb.play.addTower(3, 60, 40));
   const t = await page.locator('#play-board .tower').boundingBox();
   await page.mouse.move(t.x + t.width / 2, t.y + t.height - 20);

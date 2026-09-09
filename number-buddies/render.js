@@ -3,7 +3,7 @@ import { COLORS, FEATURES, towerParts, cubeSize } from './blocks.js';
 // The numeral sign is the most important thing on screen, so it is drawn at a
 // fixed size and never shrinks with the cubes.
 export const SIGN_SIZE = 72;
-const GAP = 4;
+export const GAP = 4;
 const INK = '#3a2c22';   // warm dark brown, like paint on a wooden toy
 
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -27,6 +27,13 @@ const eye = (cx, cy, r, lid) =>
    <ellipse class="lid" cx="${cx}" cy="${cy}" rx="${r + 1}" ry="${r * 1.08 + 1}" fill="${lid}" stroke="${INK}" stroke-width="3"/>`;
 
 const grin = (y = 66) => `<path d="M30 ${y} Q50 ${y + 20} 70 ${y}" fill="none" stroke="${INK}" stroke-width="6" stroke-linecap="round"/>`;
+
+// Two little stick arms on the top cube: down when standing, up in the air
+// when held or falling, waving during the dance.
+const ARMS = `<svg class="arms" viewBox="0 0 100 100" overflow="visible" aria-hidden="true">
+  <g class="arm left"><line x1="2" y1="58" x2="-20" y2="80" stroke="${INK}" stroke-width="6" stroke-linecap="round"/><circle cx="-22" cy="82" r="7" fill="${INK}"/></g>
+  <g class="arm right"><line x1="98" y1="58" x2="120" y2="80" stroke="${INK}" stroke-width="6" stroke-linecap="round"/><circle cx="122" cy="82" r="7" fill="${INK}"/></g>
+</svg>`;
 
 // One's single eye is its whole face; everyone else gets two.
 const faceTwoEyes = lid => svg('face', eye(34, 40, 13, lid) + eye(66, 40, 13, lid) + grin());
@@ -127,7 +134,7 @@ export function drawBuddy(host, n, { availableH = host.clientHeight || 520, size
       // bends like a reed rather than tilting as a block.
       cube.style.cssText = `width:${size}px;height:${size}px;background:${COLORS[pn]};--i:${pn - 1 - i};--lag:${(i * 0.12).toFixed(2)}`;
       if (faces && pi === 0 && i === pn - 1) {
-        cube.innerHTML = FEATURES[pn] === 'eye' ? faceGrinOnly() : faceTwoEyes(COLORS[pn]);
+        cube.innerHTML = (FEATURES[pn] === 'eye' ? faceGrinOnly() : faceTwoEyes(COLORS[pn])) + ARMS;
       }
       part.append(cube);
     }

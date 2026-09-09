@@ -80,17 +80,18 @@ test('a non-milestone sum in Add dances without fireworks', async ({ page }) => 
   expect(await page.locator('#screen-add .firework').count()).toBe(0);
 });
 
-test('joining in Play is calm: a hop, no dance, no confetti', async ({ page }) => {
+test('joining in Play has the merge beat but never confetti or fireworks', async ({ page }) => {
   await page.goto('/number-buddies/index.html');
   await page.click('[data-mode="play"]');
   await page.waitForFunction(() => window.__nb.play);
-  const [a, b] = await page.evaluate(() => [window.__nb.play.addTower(2), window.__nb.play.addTower(3)]);
+  await page.click('[data-world="meadow"]');
+  await page.waitForFunction(() => window.__nb.play.state.world === 'meadow');
+  const [a, b] = await page.evaluate(() => [window.__nb.play.addTower(2, 100, 0), window.__nb.play.addTower(3, 220, 0)]);
   await page.evaluate(([a, b]) => window.__nb.play.join(a, b), [a, b]);
-  await page.waitForTimeout(200);
+  await page.waitForFunction(() => window.__nb.spoken.includes('is-5'), null, { timeout: 15000 });
   expect(await page.locator('#screen-play .confetti-piece').count()).toBe(0);
   expect(await page.locator('#screen-play .firework').count()).toBe(0);
-  expect(await page.locator('#play-board .buddy.dance').count()).toBe(0);
-  expect(await page.locator('#play-board .cube.lit').count()).toBeGreaterThan(0);
+  await expect(page.locator('#play-board .buddy.dance')).toHaveCount(1);
 });
 
 test('celebration sounds exist and stay quiet when muted', async ({ page }) => {
