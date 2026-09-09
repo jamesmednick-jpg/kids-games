@@ -1,4 +1,5 @@
 import { MAX_SUPPORTED } from './blocks.js';
+import { initAudio, setMuted, say } from './audio.js';
 
 // ===== Parent config: edit these freely =====
 export const MAX_NUMBER = 10;        // 10 or 20
@@ -22,11 +23,16 @@ export function go(name) {
 }
 
 for (const btn of document.querySelectorAll('[data-mode]')) {
-  btn.addEventListener('click', () => go(btn.dataset.mode));
+  btn.addEventListener('click', async () => {
+    await initAudio();
+    say(`mode-${btn.dataset.mode}`);
+    go(btn.dataset.mode);
+  });
 }
 $('btn-home').addEventListener('click', () => go('home'));
 $('btn-mute').addEventListener('click', () => {
   state.muted = !state.muted;
+  setMuted(state.muted);
   $('btn-mute').textContent = state.muted ? '🔇' : '🔊';
 });
 
@@ -36,4 +42,4 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
 
-window.__nb = { state, go, settings: { MAX_NUMBER, IDLE_NUDGE_MS, CHATTINESS } };
+window.__nb = Object.assign(window.__nb || {}, { state, go, settings: { MAX_NUMBER, IDLE_NUDGE_MS, CHATTINESS } });
