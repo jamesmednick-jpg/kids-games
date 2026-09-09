@@ -1,5 +1,5 @@
 // Offline cache for the nail salon. Bump CACHE when you change any file.
-const CACHE = 'nail-salon-v1';
+const CACHE = 'nail-salon-v2';
 const FILES = [
   './', './index.html', './style.css', './game.js', './geometry.js', './render.js',
   './paint.js', './audio.js', './manifest.webmanifest',
