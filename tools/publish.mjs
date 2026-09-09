@@ -1,8 +1,9 @@
 // Publish the games to GitHub Pages.
 //
-// Bumps the service worker cache name of every game with uncommitted changes:
-// phones that already installed a game keep serving the old cached copy until
-// that name changes, so skipping this step means an update nobody ever sees.
+// Bumps the service worker cache name of every game that changed: phones
+// that already installed a game keep serving the old cached copy until that
+// name changes, so skipping this step means an update nobody ever sees.
+// "Changed" means uncommitted edits, or commits not yet pushed.
 import { readFile, writeFile } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import { GAMES, bumpCache } from './games.mjs';
@@ -10,23 +11,17 @@ import { GAMES, bumpCache } from './games.mjs';
 const ROOT = decodeURIComponent(new URL('..', import.meta.url).pathname);
 const git = (...args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' }).trim();
 
-const status = git('status', '--porcelain');
-if (!status) {
-  // Nothing new to commit, but commits made by hand may still be waiting.
-  const unpushed = git('log', '--oneline', '@{u}..HEAD');
-  if (!unpushed) {
-    console.log('Nothing to publish.');
-    process.exit(0);
-  }
-  git('push');
-  console.log(`Pushed ${unpushed.split('\n').length} commit(s). GitHub Pages rebuilds in about a minute:`);
-  console.log('  https://jamesmednick-jpg.github.io/kids-games/');
+const dirty = git('status', '--porcelain').split('\n').filter(Boolean).map(l => l.slice(3));
+const unpushed = git('diff', '--name-only', '@{u}..HEAD').split('\n').filter(Boolean);
+const changed = [...dirty, ...unpushed];
+if (!changed.length) {
+  console.log('Nothing to publish.');
   process.exit(0);
 }
 
 const bumped = [];
 for (const game of GAMES) {
-  if (!status.split('\n').some(line => line.slice(3).startsWith(game + '/'))) continue;
+  if (!changed.some(f => f.startsWith(game + '/'))) continue;
   const path = `${ROOT}${game}/sw.js`;
   const { text, version } = bumpCache(await readFile(path, 'utf8'), game);
   await writeFile(path, text);
@@ -35,8 +30,10 @@ for (const game of GAMES) {
 }
 if (!bumped.length) console.log('No game files changed; publishing without a cache bump.');
 
-git('add', '-A');
-git('commit', '-m', process.argv[2] || `Update ${bumped.join(', ') || 'the site'}`);
+if (git('status', '--porcelain')) {
+  git('add', '-A');
+  git('commit', '-m', process.argv[2] || `Update ${bumped.join(', ') || 'the site'}`);
+}
 git('push');
 console.log('\nPushed. GitHub Pages rebuilds in about a minute:');
 console.log('  https://jamesmednick-jpg.github.io/kids-games/');
