@@ -1,6 +1,6 @@
 // Offline cache for Number Buddies. Bump CACHE when you change any file —
 // `npm run publish` does it for you.
-const CACHE = 'number-buddies-v2';
+const CACHE = 'number-buddies-v3';
 const FILES = [
   './', './index.html', './style.css', './game.js', './blocks.js', './render.js',
   './audio.js', './build.js', './add.js', './play.js', './nudge.js', './hold.js', './manifest.webmanifest', './voice/manifest.json',
