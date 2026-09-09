@@ -7,15 +7,17 @@ export const LOGICAL_H = 800;
 // Tip profile per shape. f(t) maps t in [-1,1] (left edge to right edge)
 // to [0,1] where 0 is the very tip and 1 is where the tip meets the side.
 // tipH is how tall the tip region is. hScale lengthens the whole nail.
-// hScale lengthens the nail; over is how much of it reaches past the
-// fingertip, as a fraction of the nail's own height. Short shapes end at the
-// tip, long ones extend beyond it the way real long nails do.
+// hScale lengthens the nail. The nail's free edge is placed relative to the
+// TOP OF THE FINGER: `lift` is how far up the rounded fingertip it reaches as
+// a fraction of the cap's radius, and `over` is how far past that it carries
+// on, as a fraction of the nail's own height. Short shapes finish level with
+// the fingertip; long ones reach beyond it the way real long nails do.
 const TIP = {
-  square:  { f: t => Math.abs(t) ** 12,            tipH: w => w * 0.08, hScale: 1.0,  over: 0.03 },
-  round:   { f: t => 1 - Math.sqrt(1 - t * t),     tipH: w => w * 0.5,  hScale: 1.0,  over: 0.04 },
-  oval:    { f: t => 1 - Math.sqrt(1 - t * t),     tipH: w => w * 0.7,  hScale: 1.24, over: 0.32 },
-  almond:  { f: t => Math.abs(t) ** 1.4,           tipH: w => w * 0.9,  hScale: 1.38, over: 0.44 },
-  pointed: { f: t => Math.abs(t),                  tipH: w => w * 1.0,  hScale: 1.52, over: 0.53 },
+  square:  { f: t => Math.abs(t) ** 12,        tipH: w => w * 0.08, hScale: 1.0,  lift: 0.70, over: 0.00 },
+  round:   { f: t => 1 - Math.sqrt(1 - t * t), tipH: w => w * 0.5,  hScale: 1.0,  lift: 0.92, over: 0.02 },
+  oval:    { f: t => 1 - Math.sqrt(1 - t * t), tipH: w => w * 0.7,  hScale: 1.24, lift: 0.95, over: 0.20 },
+  almond:  { f: t => Math.abs(t) ** 1.4,       tipH: w => w * 0.9,  hScale: 1.38, lift: 0.95, over: 0.32 },
+  pointed: { f: t => Math.abs(t),              tipH: w => w * 1.0,  hScale: 1.52, lift: 0.95, over: 0.40 },
 };
 
 export function nailPolygon(shape, rect, samples = 44) {
@@ -93,9 +95,13 @@ const WEB = {
   pinkyOuter: { x: 479, y: 484 },
   wristL: { x: 272, y: 802 },
   wristR: { x: 438, y: 802 },
-  ctrlPalmL: { x: 248, y: 752 },   // wrist up to the thumb's outer root
-  ctrlThumbWeb: { x: 186, y: 505 },// the deep web between thumb and index
-  ctrlPalmR: { x: 498, y: 625 },   // pinky root down to the wrist
+  ctrlPalmR: { x: 498, y: 668 },   // the palm's fullest point on the little-finger side
+  // how far the outline carries on in a finger's own direction before it
+  // curves away, which is what keeps these junctions free of corners
+  palmLTangent: 62,
+  webTangentThumb: 34,
+  webTangentIndex: 62,
+  palmRTangent: 56,
 };
 
 const FINGERS = [
@@ -130,7 +136,16 @@ export function edgePoint(f, t, side) {
   return { x: p.x + n.x * h, y: p.y + n.y * h };
 }
 
+// The centre of the fingertip's rounded cap.
 export function fingerTip(f) { return axisPoint(f, 1); }
+
+// The visible top of the finger: the apex of that cap, half a finger-width
+// further on. This, not fingerTip, is where a nail's free edge belongs.
+export function fingerTipTop(f) {
+  const { u } = fingerFrame(f);
+  const t = axisPoint(f, 1), r = f.wt / 2;
+  return { x: t.x + u.x * r, y: t.y + u.y * r };
+}
 
 // The two side edges of a finger, from its web anchors up to the tip.
 export function fingerEdges(f, anchorL, anchorR) {
@@ -153,11 +168,15 @@ export function buildHand(shape) {
 
   const nails = FINGERS.map((f, index) => {
     const { u } = fingerFrame(f);
-    const w = Math.round(f.wt * 0.92);          // nearly as wide as the fingertip
+    const w = Math.round(f.wt * 0.88);          // nearly as wide as the fingertip
     const baseH = Math.round(w * 1.2);
-    const h = Math.round(baseH * TIP[shape].hScale);
+    const T = TIP[shape];
+    const h = Math.round(baseH * T.hScale);
     const tip = fingerTip(f);
-    const back = h * (1 - TIP[shape].over);     // the nail ends at the fingertip, or past it
+    // how far the free edge reaches above the cap's centre, then work back
+    // down the nail's own length to find where the cuticle sits
+    const reach = (f.wt / 2) * T.lift + h * T.over;
+    const back = h - reach;
     const pivot = { x: tip.x - u.x * back, y: tip.y - u.y * back };
     const rect = { x: pivot.x - w / 2, y: pivot.y - h, w, h };
     const points = nailPolygon(shape, rect).map(([x, y]) => rotatePoint(x, y, pivot.x, pivot.y, f.angle));
@@ -175,10 +194,9 @@ export function buildHand(shape) {
     pts.push([tip.x - r, tip.y - r], [tip.x + r, tip.y + r]);
   }
   for (const n of nails) pts.push([n.bounds.minX, n.bounds.minY], [n.bounds.maxX, n.bounds.maxY]);
-  const qmid = (a, c, b) => [0.25 * a.x + 0.5 * c.x + 0.25 * b.x, 0.25 * a.y + 0.5 * c.y + 0.25 * b.y];
-  pts.push([WEB.wristL.x, WEB.wristL.y], [WEB.wristR.x, WEB.wristR.y]);
-  pts.push(qmid(WEB.wristL, WEB.ctrlPalmL, anchors[0].L));
-  pts.push(qmid(WEB.pinkyOuter, WEB.ctrlPalmR, WEB.wristR));
+  // the palm's own curves never reach past the fingers, so its endpoints and
+  // the one control that shapes its widest side are enough for framing
+  pts.push([WEB.wristL.x, WEB.wristL.y], [WEB.wristR.x, WEB.wristR.y], [WEB.ctrlPalmR.x, WEB.ctrlPalmR.y]);
   const bounds = polygonBounds(pts);
 
   return { shape, fingers: FINGERS, web: WEB, anchors, nails, bounds };

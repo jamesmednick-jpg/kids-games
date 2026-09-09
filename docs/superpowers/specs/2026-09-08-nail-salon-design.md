@@ -95,10 +95,16 @@ are decorative.
 - Styled after a salon-game reference (revised 2026-09-09): long slender
   fingers with a clear taper, the visible middle finger about 0.87 of the
   palm's length, and soft smooth shading with barely-there knuckles. Nails
-  are 0.92 of the fingertip's width and are measured DOWN from the fingertip
-  rather than up from a fixed gap, so a round or square nail ends level with
-  the fingertip and oval, almond and pointed nails reach past it by roughly
-  a third, 44 and 53 percent of their length.
+  are 0.88 of the fingertip's width. Their free edge is placed against the
+  VISIBLE TOP of the finger, the apex of its rounded tip cap, not the axis
+  point at the cap's centre; confusing those two once left every nail sitting
+  half a finger-width too low. A round nail ends level with that apex, a
+  square one a little inside it, and oval, almond and pointed nails carry on
+  past it by 20, 32 and 40 percent of their own length.
+- Where the palm meets a finger, the outline's control points are derived
+  from that finger's own edge direction, so the curve carries straight
+  through instead of kinking. This is what keeps the thumb web a smooth
+  sweep rather than a beak.
 - Rings (added 2026-09-09): a ring tool whose strip offers 8 styles (plain
   gold, silver and rose bands, plus ruby, diamond, heart, emerald and pearl).
   Rings are worn on the whole hand, not a zoomed nail, so choosing the tool

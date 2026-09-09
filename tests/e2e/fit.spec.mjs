@@ -31,7 +31,11 @@ for (const s of SIZES) {
     // and the hand still gets a real amount of room
     const stage = await stageBox(page);
     expect(stage.height).toBeGreaterThan(s.height * 0.45);
+    // In the whole-hand view a nail only has to be visible and tappable;
+    // painting happens zoomed in, where one nail fills the screen. The tap
+    // target is the nail plus a generous margin, so 20 px of nail is ample
+    // even on the smallest phone with its browser toolbars showing.
     const nail = await nailRect(page, 2);
-    expect(nail.w).toBeGreaterThan(24);
+    expect(nail.w).toBeGreaterThan(20);
   });
 }

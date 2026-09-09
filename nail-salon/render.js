@@ -3,7 +3,7 @@
 // Everything is vector: soft, airbrushed-looking shading is built from layered
 // gradients and edge-hugging strokes rather than blur filters, so it renders
 // the same on every phone and stays cheap enough to redraw each frame.
-import { fingerFrame, fingerEdges, axisPoint, widthAt, fingerTip } from './geometry.js';
+import { fingerFrame, fingerEdges, axisPoint, widthAt } from './geometry.js';
 
 // Ring styles. Parents can edit these: band is the metal, gem is optional.
 export const RINGS = [
@@ -54,8 +54,15 @@ function edgesOf(hand) {
   return hand._edges;
 }
 
+function unit(ax, ay, bx, by) {
+  const dx = bx - ax, dy = by - ay, d = Math.hypot(dx, dy) || 1;
+  return { x: dx / d, y: dy / d };
+}
+
 // The whole hand as ONE closed path: wrist, thumb, web, four fingers, wrist.
-// Adjacent fingers share their notch exactly, so nothing can seam.
+// Adjacent fingers share their notch exactly, so nothing can seam. Where the
+// palm meets a finger the control points are derived from that finger's own
+// edge direction, so the outline carries straight through instead of kinking.
 export function handOutline(hand) {
   if (hand._outline) return hand._outline;
   const p = new Path2D();
@@ -64,15 +71,40 @@ export function handOutline(hand) {
     const { n } = fingerFrame(F[i]);
     p.arc(E[i].tip.x, E[i].tip.y, E[i].radius, Math.atan2(-n.y, -n.x), Math.atan2(n.y, n.x), false);
   };
+
+  // up the left of the palm, arriving along the thumb's own outer edge
+  const thumbUp = unit(A[0].L.x, A[0].L.y, E[0].cL.x, E[0].cL.y);
   p.moveTo(W.wristL.x, W.wristL.y);
-  p.quadraticCurveTo(W.ctrlPalmL.x, W.ctrlPalmL.y, A[0].L.x, A[0].L.y);
+  p.bezierCurveTo(
+    W.wristL.x - 6, W.wristL.y - 58,
+    A[0].L.x - thumbUp.x * W.palmLTangent, A[0].L.y - thumbUp.y * W.palmLTangent,
+    A[0].L.x, A[0].L.y,
+  );
+
   for (let i = 0; i < 5; i++) {
     p.quadraticCurveTo(E[i].cL.x, E[i].cL.y, E[i].tipL.x, E[i].tipL.y);
     cap(i);
     p.quadraticCurveTo(E[i].cR.x, E[i].cR.y, A[i].R.x, A[i].R.y);
-    if (i === 0) p.quadraticCurveTo(W.ctrlThumbWeb.x, W.ctrlThumbWeb.y, A[1].L.x, A[1].L.y);
+    if (i === 0) {
+      // the thumb web: leave along the thumb's inner edge, arrive along the
+      // index finger's outer edge, so neither junction shows a corner
+      const downThumb = unit(E[0].tipR.x, E[0].tipR.y, A[0].R.x, A[0].R.y);
+      const upIndex = unit(A[1].L.x, A[1].L.y, E[1].cL.x, E[1].cL.y);
+      p.bezierCurveTo(
+        A[0].R.x + downThumb.x * W.webTangentThumb, A[0].R.y + downThumb.y * W.webTangentThumb,
+        A[1].L.x - upIndex.x * W.webTangentIndex, A[1].L.y - upIndex.y * W.webTangentIndex,
+        A[1].L.x, A[1].L.y,
+      );
+    }
   }
-  p.quadraticCurveTo(W.ctrlPalmR.x, W.ctrlPalmR.y, W.wristR.x, W.wristR.y);
+
+  // down the right of the palm, leaving along the pinky's own outer edge
+  const pinkyDown = unit(E[4].cR.x, E[4].cR.y, A[4].R.x, A[4].R.y);
+  p.bezierCurveTo(
+    A[4].R.x + pinkyDown.x * W.palmRTangent, A[4].R.y + pinkyDown.y * W.palmRTangent,
+    W.ctrlPalmR.x, W.ctrlPalmR.y,
+    W.wristR.x, W.wristR.y,
+  );
   p.closePath();
   hand._outline = p;
   return p;

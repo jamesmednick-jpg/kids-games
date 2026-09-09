@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   SHAPES, LOGICAL_W, LOGICAL_H, nailPolygon, polygonBounds, pointInPolygon,
-  interpolate, buildHand, hitNail, hitNailLoose, hitFinger, fingerTip, axisPoint, widthAt,
+  interpolate, buildHand, hitNail, hitNailLoose, hitFinger, fingerTip, fingerTipTop, fingerFrame, axisPoint, widthAt,
 } from '../../nail-salon/geometry.js';
 
 const RECT = { x: 100, y: 100, w: 60, h: 80 };
@@ -85,18 +85,35 @@ test('buildHand has five nails inside the logical space and no overlaps', () => 
   }
 });
 
-test('a short nail ends at the fingertip and a long one reaches past it', () => {
-  const gap = shape => {
+// Measured against the TOP of the finger, not the centre of its rounded tip
+// cap. Getting those two confused is what once left every nail sitting a
+// half finger-width too low.
+test('a short nail ends at the top of the finger and a long one reaches past it', () => {
+  // measured ALONG the finger's own axis, so a leaning thumb is judged the
+  // same way as an upright middle finger
+  const gap = (shape, i = 2) => {
     const hand = buildHand(shape);
-    return fingerTip(hand.fingers[2]).y - hand.nails[2].bounds.minY;   // + is past the tip
+    const f = hand.fingers[i], { u } = fingerFrame(f), t = fingerTip(f);
+    const reach = Math.max(...hand.nails[i].points.map(([x, y]) => (x - t.x) * u.x + (y - t.y) * u.y));
+    return reach - f.wt / 2;                                             // + is past the tip
   };
-  for (const shape of ['round', 'square']) {
-    const g = gap(shape);
-    assert.ok(Math.abs(g) < 8, `${shape} nail should end at the fingertip, off by ${g.toFixed(1)}`);
+  for (let i = 0; i < 5; i++) {
+    assert.ok(Math.abs(gap('round', i)) < 7, `round nail ${i} off by ${gap('round', i).toFixed(1)}`);
+    const sq = gap('square', i);
+    assert.ok(sq < 5 && sq > -14, `square nail ${i} off by ${sq.toFixed(1)}`);
   }
-  assert.ok(gap('oval') > 10, 'oval reaches past the fingertip');
+  assert.ok(gap('oval') > 8, 'oval reaches past the fingertip');
   assert.ok(gap('almond') > gap('oval'), 'almond is longer than oval');
   assert.ok(gap('pointed') > gap('almond'), 'pointed is longest');
+});
+
+test('the top of the finger is half a width beyond its axis tip', () => {
+  const hand = buildHand('round');
+  for (const f of hand.fingers) {
+    const t = fingerTip(f), top = fingerTipTop(f);
+    assert.ok(Math.abs(Math.hypot(top.x - t.x, top.y - t.y) - f.wt / 2) < 0.001, f.name);
+    assert.ok(top.y < t.y, `${f.name}: the top is above the cap's centre`);
+  }
 });
 
 test('nails are nearly as wide as the fingertip they sit on', () => {
