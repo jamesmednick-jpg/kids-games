@@ -12,7 +12,15 @@ const git = (...args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8'
 
 const status = git('status', '--porcelain');
 if (!status) {
-  console.log('Nothing to publish.');
+  // Nothing new to commit, but commits made by hand may still be waiting.
+  const unpushed = git('log', '--oneline', '@{u}..HEAD');
+  if (!unpushed) {
+    console.log('Nothing to publish.');
+    process.exit(0);
+  }
+  git('push');
+  console.log(`Pushed ${unpushed.split('\n').length} commit(s). GitHub Pages rebuilds in about a minute:`);
+  console.log('  https://jamesmednick-jpg.github.io/kids-games/');
   process.exit(0);
 }
 

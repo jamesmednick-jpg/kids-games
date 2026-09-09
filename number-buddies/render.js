@@ -84,7 +84,9 @@ export function cubeSizeFor(availableH, tallestN) {
 
 // Builds a buddy into host and returns it. Clears whatever was there. Pass
 // `size` (from cubeSizeFor) whenever more than one buddy shares a screen.
-export function drawBuddy(host, n, { availableH = host.clientHeight || 520, size = null, faces = true } = {}) {
+// `sign` exists only for the home-screen thumbnails; in play the sign is
+// always SIGN_SIZE.
+export function drawBuddy(host, n, { availableH = host.clientHeight || 520, size = null, faces = true, sign = SIGN_SIZE } = {}) {
   host.textContent = '';
   const parts = towerParts(n);
   size = size || cubeSizeFor(availableH, n);
@@ -94,11 +96,11 @@ export function drawBuddy(host, n, { availableH = host.clientHeight || 520, size
   buddy.dataset.n = n;
   buddy.style.setProperty('--cube', `${size}px`);
 
-  const sign = document.createElement('div');
-  sign.className = 'sign';
-  sign.textContent = String(n);
-  sign.style.setProperty('--sign', `${SIGN_SIZE}px`);
-  buddy.append(sign);
+  const signEl = document.createElement('div');
+  signEl.className = 'sign';
+  signEl.textContent = String(n);
+  signEl.style.setProperty('--sign', `${sign}px`);
+  buddy.append(signEl);
 
   const row = document.createElement('div');
   row.className = 'parts';

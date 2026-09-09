@@ -19,8 +19,9 @@ test('the game asks for a target and shows a ghost of it', async ({ page }) => {
   await page.click('[data-mode="build"]');
   await page.waitForFunction(() => window.__nb.build);
   const target = await page.evaluate(() => window.__nb.build.state.target);
+  const max = await page.evaluate(() => window.__nb.settings.MAX_NUMBER);
   expect(target).toBeGreaterThanOrEqual(1);
-  expect(target).toBeLessThanOrEqual(10);
+  expect(target).toBeLessThanOrEqual(max);
   expect(await page.locator('#build-target .cube').count()).toBe(target);
   expect(await page.evaluate(() => window.__nb.spoken)).toContain(`make-${target}`);
 });

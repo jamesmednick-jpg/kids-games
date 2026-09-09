@@ -3,6 +3,7 @@ import { initAudio, setMuted, say } from './audio.js';
 import { mountBuild } from './build.js';
 import { mountAdd } from './add.js';
 import { mountPlay } from './play.js';
+import { drawBuddy } from './render.js';
 
 // ===== Parent config: edit these freely =====
 export const MAX_NUMBER = 10;        // 10 or 20
@@ -44,6 +45,26 @@ $('btn-mute').addEventListener('click', () => {
   setMuted(state.muted);
   $('btn-mute').textContent = state.muted ? '🔇' : '🔊';
 });
+
+// Little buddies on the home tiles, so the first screen already looks like
+// the game rather than a row of emoji.
+function drawTiles() {
+  const mini = (host, n) => {
+    const slot = document.createElement('span');
+    slot.className = 'mini';
+    host.append(slot);
+    drawBuddy(slot, n, { size: 16, sign: 26 });
+  };
+  const build = document.querySelector('[data-pic="build"]');
+  mini(build, 3);
+  const add = document.querySelector('[data-pic="add"]');
+  mini(add, 2);
+  add.insertAdjacentHTML('beforeend', '<span class="mini-plus">+</span>');
+  mini(add, 3);
+  const play = document.querySelector('[data-pic="play"]');
+  for (const n of [1, 4, 2]) mini(play, n);
+}
+drawTiles();
 
 // Tests shorten the idle delay with ?nudge=250 rather than waiting eight seconds.
 const nudgeMs = Number(new URLSearchParams(location.search).get('nudge')) || IDLE_NUDGE_MS;

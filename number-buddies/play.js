@@ -1,5 +1,5 @@
 import { joinTowers, splitTower } from './blocks.js';
-import { drawBuddy, cubeSizeFor } from './render.js';
+import { drawBuddy, cubeSizeFor, SIGN_SIZE } from './render.js';
 import { say, thunk, clunk } from './audio.js';
 
 // No goals. She stacks, joins and splits, and every tower says its own number
@@ -106,9 +106,9 @@ export function mountPlay(host, { max }) {
     const me = drag.t;
     drag.el.classList.remove('lifted');
     drag = null;
-    // Keep it on the table.
+    // Keep it on the table, sign and all.
     me.x = Math.max(0, Math.min(board.clientWidth - size, me.x));
-    me.y = Math.max(0, me.y);
+    me.y = Math.max(0, Math.min(board.clientHeight - (me.n * (size + 4) + SIGN_SIZE), me.y));
     // Dropping a tower on or against another joins them.
     const near = state.towers.find(o => o !== me
       && Math.abs(o.x - me.x) < size
