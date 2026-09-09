@@ -1,6 +1,7 @@
 import { SHAPES, LOGICAL_W, LOGICAL_H, buildHand, hitNail, interpolate, pointInPolygon } from './geometry.js';
 import { drawScene } from './render.js';
 import { NailLayer } from './paint.js';
+import { initAudio, setMuted, pop, tinkle, chime } from './audio.js';
 
 // ===== Parent config: edit these freely =====
 export const CAPTION = 'Nail Salon';
@@ -18,7 +19,7 @@ const els = {
   stage: $('stage'), hand: $('hand'), palette: $('palette'), tray: $('tray'),
   toolButtons: [...document.querySelectorAll('#tools .tool[data-tool]')],
   stickerBtn: $('tool-sticker'), clearBtn: $('tool-clear'),
-  party: $('party'), confetti: $('confetti'), fallback: $('fallback'), fallbackImg: $('fallback-img'),
+  muteBtn: $('btn-mute'), party: $('party'), confetti: $('confetti'), fallback: $('fallback'), fallbackImg: $('fallback-img'),
 };
 
 export const state = {
@@ -159,6 +160,7 @@ function applyTool(i, p, isStart) {
     L.paint(p.x, p.y, color, r);
   } else if (state.tool === 'glitter') {
     L.glitter(p.x, p.y, color, r);
+    if (Math.random() < 0.15) tinkle();
   } else if (state.tool === 'sticker' && isStart) {
     const s = STICKERS[state.sticker];
     if (s === '●') L.dot(p.x, p.y, color, nail.rect.w * 0.22);
@@ -258,6 +260,7 @@ function startConfetti(seconds = 3) {
 }
 
 function showParty() {
+  chime();
   els.tray.hidden = true;
   armClear(false);
   state.activeNail = -1;
@@ -325,6 +328,19 @@ $('btn-done').addEventListener('click', showParty);
 $('btn-new').addEventListener('click', () => { hideParty(); showScreen('shape'); });
 $('btn-photo').addEventListener('click', sharePhoto);
 $('btn-fallback-close').addEventListener('click', () => { els.fallback.hidden = true; });
+
+function applyMute(m) {
+  state.muted = m;
+  setMuted(m);
+  els.muteBtn.textContent = m ? '🔇' : '🔊';
+  try { localStorage.setItem('nail-salon-muted', m ? '1' : '0'); } catch { /* private mode */ }
+}
+try { applyMute(localStorage.getItem('nail-salon-muted') === '1'); } catch { applyMute(false); }
+els.muteBtn.addEventListener('click', () => applyMute(!state.muted));
+
+// every button pops; the first touch anywhere unlocks audio on iOS
+document.addEventListener('pointerdown', initAudio, { capture: true });
+document.addEventListener('click', e => { if (e.target.closest('button')) pop(); }, { capture: true });
 new ResizeObserver(() => { if (state.screen === 'salon') fitCanvas(); }).observe(els.stage);
 
 buildSkins();
