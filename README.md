@@ -8,8 +8,8 @@ Small, ad-free web games for a phone. One folder per game, a launcher at the roo
 3. The icon on the home screen opens the game full screen and works offline.
 
 ## Games
-- `nail-salon/` — tap a finger to zoom in, then paint with a little polish brush that stays inside the lines, add glitter and stickers, and save a photo at the end.
-  Parent settings (caption, colors, stickers, skin tones) are at the top of `nail-salon/game.js`.
+- `nail-salon/` — tap a finger to zoom in, then paint with a little polish brush that stays inside the lines, add glitter and stickers, put rings on the fingers, and save a photo at the end.
+  Parent settings (caption, colors, stickers, skin tones) are at the top of `nail-salon/game.js`; ring styles are in `nail-salon/render.js`.
   After changing any file in the folder, bump `CACHE` in `nail-salon/sw.js` so phones pick up the update.
 
 ## Adding a game

@@ -83,11 +83,24 @@ are decorative.
   glitter tool is active and the 8 stickers while the sticker tool is
   active; both strips are the same height so the hand never jumps. The
   selected sticker is highlighted and the Stickers button shows it.
-- Hand (amended 2026-09-09): slim tapered fingers with rounded tips, gently
-  splayed, a thumb leaning out about 38 degrees with its nail rotated to
-  match, soft side shading and faint knuckle creases, one outline around the
-  whole silhouette. In the whole-hand view a tap within 28 logical px of a
-  nail counts as that nail.
+- Hand (rebuilt 2026-09-09): the whole hand is ONE closed outline. Adjacent
+  fingers share their web notch exactly, so a finger can never look detached
+  from the palm. Proportions follow a real hand: the visible part of the
+  middle finger is about 0.77 of the palm's length, and the breadth across
+  the four fingers is about 0.8 of it. Fingers taper to rounded tips and fan
+  out gently; the thumb leans 44 degrees with its nail rotated to match.
+  Shading is one light source across the hand plus strokes that hug the
+  silhouette's own edges, so no interior seam is possible. In the whole-hand
+  view a tap within 28 logical px of a nail counts as that nail.
+- Rings (added 2026-09-09): a ring tool whose strip offers 8 styles (plain
+  gold, silver and rose bands, plus ruby, diamond, heart, emerald and pearl).
+  Rings are worn on the whole hand, not a zoomed nail, so choosing the tool
+  zooms out and a tap anywhere on a finger puts the chosen ring on it.
+  Tapping the same finger again takes it off, and the sponge cleans a
+  finger's nail and ring together. Rings are drawn under the nails and reach
+  the saved photo. Styles live in RINGS in `nail-salon/render.js`.
+- The whole-hand view is framed from the hand's measured extent rather than
+  the logical page, so the hand fills the phone screen with no wasted margin.
 - Brush cursor (amended 2026-09-09): while the brush tool paints, a small
   polish brush (bristles in the current color, pale handle tilted up-right)
   is drawn at the touch point. With a mouse it also follows the pointer

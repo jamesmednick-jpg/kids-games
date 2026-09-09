@@ -16,7 +16,7 @@ test('every visible salon button is at least 56px square', async ({ page }) => {
   await openSalon(page);
   const boxes = await page.locator('#screen-salon button:visible').evaluateAll(els =>
     els.map(el => { const r = el.getBoundingClientRect(); return { id: el.id || el.dataset.color, w: r.width, h: r.height }; }));
-  expect(boxes.length).toBeGreaterThan(15);
+  expect(boxes.length).toBeGreaterThan(16);
   for (const b of boxes) {
     expect(b.w, `${b.id} width`).toBeGreaterThanOrEqual(56);
     expect(b.h, `${b.id} height`).toBeGreaterThanOrEqual(56);

@@ -1,5 +1,5 @@
-import { SHAPES, LOGICAL_W, LOGICAL_H, buildHand, hitNail, hitNailLoose, interpolate, pointInPolygon } from './geometry.js';
-import { drawScene, drawBrush, brushHandleCenter } from './render.js';
+import { SHAPES, LOGICAL_W, LOGICAL_H, buildHand, hitNail, hitNailLoose, hitFinger, axisPoint, interpolate, pointInPolygon } from './geometry.js';
+import { drawScene, drawBrush, brushHandleCenter, drawRingAt, RINGS } from './render.js';
 import { NailLayer } from './paint.js';
 import { initAudio, setMuted, pop, tinkle, chime } from './audio.js';
 
@@ -11,6 +11,7 @@ export const PALETTE = [
 ];
 export const STICKERS = ['❤️', '⭐', '🌸', '💎', '🦋', '🌈', '☀️', '●'];
 export const SKIN_TONES = ['#f8d9c4', '#e8b894', '#b87a4b', '#6b4226'];
+// Ring styles live in render.js (RINGS) because they are drawn, not text.
 // ============================================
 
 const $ = id => document.getElementById(id);
@@ -18,7 +19,7 @@ const els = {
   shape: $('screen-shape'), salon: $('screen-salon'), skins: $('skins'), tiles: $('tiles'),
   stage: $('stage'), hand: $('hand'), palette: $('palette'), tray: $('tray'),
   toolButtons: [...document.querySelectorAll('#tools .tool[data-tool]')],
-  stickerBtn: $('tool-sticker'), clearBtn: $('tool-clear'),
+  rings: $('rings'), stickerBtn: $('tool-sticker'), clearBtn: $('tool-clear'),
   muteBtn: $('btn-mute'), backBtn: $('btn-back'), party: $('party'), confetti: $('confetti'), fallback: $('fallback'), fallbackImg: $('fallback-img'),
 };
 
@@ -26,7 +27,7 @@ export const state = {
   screen: 'shape', shape: 'round', skin: 1, hand: null, layers: [],
   tool: 'brush', color: 0, sticker: 0, activeNail: -1, last: null, clearArmed: false,
   muted: false, dirty: true, frames: 0,
-  zoomNail: -1, animating: false,
+  zoomNail: -1, animating: false, ring: 0, rings: [-1, -1, -1, -1, -1],
   cursor: null, // { x, y, mouse } in logical coords while a pointer is over the hand
 };
 const TAP_MARGIN = 28; // logical px of forgiveness when picking a finger
@@ -78,12 +79,12 @@ function drawTile(canvas, shape) {
   ctx.scale(dpr, dpr);
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, r.width, r.height);
   // show the finger region
-  const region = { x: 0, y: 90, w: LOGICAL_W, h: 580 };
+  const region = { x: 30, y: 95, w: 520, h: 460 };
   const s = Math.min(r.width / region.w, r.height / region.h);
   ctx.translate((r.width - region.w * s) / 2, (r.height - region.h * s) / 2);
   ctx.scale(s, s);
   ctx.translate(-region.x, -region.y);
-  drawScene(ctx, buildHand(shape), SKIN_TONES[state.skin], null);
+  drawScene(ctx, buildHand(shape), SKIN_TONES[state.skin], null, null);
 }
 
 function startSalon(shape) {
@@ -92,6 +93,7 @@ function startSalon(shape) {
   state.frames = 0;
   state.zoomNail = -1;
   state.animating = false;
+  state.rings = [-1, -1, -1, -1, -1];
   animToken++;
   els.backBtn.hidden = true;
   showScreen('salon');
@@ -131,11 +133,17 @@ function fitCanvas() {
   state.dirty = true;
 }
 
-// Whole hand, bottom-aligned, as large as the stage allows.
+// Whole hand, bottom-aligned, filling the stage. Measured from what is
+// actually drawn rather than the logical page, so no empty margin is wasted.
 function homeView() {
-  const TOP = 100; // nothing is drawn above this line, so let the hand use that room
-  const scale = Math.min(view.w / LOGICAL_W, view.h / (LOGICAL_H - TOP));
-  return { scale, ox: (view.w - LOGICAL_W * scale) / 2, oy: view.h - LOGICAL_H * scale };
+  const b = state.hand.bounds;
+  const pad = 16;
+  const scale = Math.min(view.w / (b.maxX - b.minX + pad * 2), view.h / (b.maxY - b.minY + pad));
+  return {
+    scale,
+    ox: view.w / 2 - ((b.minX + b.maxX) / 2) * scale,
+    oy: view.h - b.maxY * scale,
+  };
 }
 
 // One nail filling most of the stage, with a little finger around it.
@@ -192,7 +200,7 @@ function render() {
     ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
     ctx.translate(view.ox, view.oy);
     ctx.scale(view.scale, view.scale);
-    drawScene(ctx, state.hand, SKIN_TONES[state.skin], state.layers);
+    drawScene(ctx, state.hand, SKIN_TONES[state.skin], state.layers, state.rings);
     if (brushShown()) {
       const n = state.hand.nails[state.zoomNail >= 0 ? state.zoomNail : 2];
       drawBrush(ctx, state.cursor.x, state.cursor.y, n.rect.w, PALETTE[state.color]);
@@ -226,9 +234,48 @@ function applyTool(i, p, isStart) {
 function selectTool(tool) {
   state.tool = tool;
   els.toolButtons.forEach(b => b.classList.toggle('selected', b.dataset.tool === tool));
-  // the top strip: stickers while placing stickers, colors otherwise
+  // the top strip shows what the current tool uses
   els.tray.hidden = tool !== 'sticker';
-  els.palette.hidden = tool === 'sticker';
+  els.rings.hidden = tool !== 'ring';
+  els.palette.hidden = tool === 'sticker' || tool === 'ring';
+  // rings go on the whole hand, so back out of a zoomed nail
+  if (tool === 'ring' && state.hand && state.zoomNail >= 0 && !state.animating) zoomTo(-1);
+  state.dirty = true;
+}
+
+function buildRings() {
+  els.rings.innerHTML = '';
+  RINGS.forEach((style, i) => {
+    const b = document.createElement('button');
+    b.dataset.ring = i;
+    b.setAttribute('aria-label', `Ring ${i + 1}`);
+    b.classList.toggle('selected', i === state.ring);
+    const c = document.createElement('canvas');
+    b.append(c);
+    b.addEventListener('click', () => { state.ring = i; buildRings(); selectTool('ring'); });
+    els.rings.append(b);
+    requestAnimationFrame(() => drawRingPreview(c, style));
+  });
+}
+
+function drawRingPreview(canvas, style) {
+  const r = canvas.getBoundingClientRect();
+  if (!r.width) return;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.round(r.width * dpr);
+  canvas.height = Math.round(r.height * dpr);
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.fillStyle = '#f0cfba';                       // a little finger to wear it
+  ctx.beginPath();
+  ctx.roundRect(r.width / 2 - r.width * 0.17, r.height * 0.1, r.width * 0.34, r.height * 0.85, r.width * 0.17);
+  ctx.fill();
+  drawRingAt(ctx, r.width / 2, r.height * 0.62, 0, r.width * 0.36, style);
+}
+
+function applyRing(i) {
+  if (i < 0) return;
+  state.rings[i] = state.rings[i] === state.ring ? -1 : state.ring;
   state.dirty = true;
 }
 
@@ -276,10 +323,12 @@ els.hand.addEventListener('pointerdown', e => {
   const p = toLogical(e);
   const i = state.zoomNail < 0 ? hitNailLoose(state.hand, p.x, p.y, TAP_MARGIN) : hitNail(state.hand, p.x, p.y);
   if (state.clearArmed) {
-    if (i >= 0) { state.layers[i].clear(); state.dirty = true; }
+    const j = state.zoomNail < 0 ? hitFinger(state.hand, p.x, p.y) : i;
+    if (j >= 0) { state.layers[j].clear(); state.rings[j] = -1; state.dirty = true; }
     armClear(false);
     return;
   }
+  if (state.tool === 'ring') { applyRing(hitFinger(state.hand, p.x, p.y)); return; }
   if (i < 0) return;
   if (i !== state.zoomNail) { pop(); zoomTo(i); return; } // whole hand or a neighbour: zoom to it
   els.hand.setPointerCapture(e.pointerId);
@@ -366,7 +415,7 @@ async function exportPhoto() {
   ctx.scale(S, S);
   ctx.fillStyle = '#fff0f5';
   ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
-  drawScene(ctx, state.hand, SKIN_TONES[state.skin], state.layers);
+  drawScene(ctx, state.hand, SKIN_TONES[state.skin], state.layers, state.rings);
   ctx.font = 'bold 28px -apple-system, system-ui, sans-serif';
   ctx.fillStyle = '#b5179e';
   ctx.textAlign = 'right';
@@ -407,6 +456,7 @@ els.toolButtons.forEach(b => b.addEventListener('click', () => {
 }));
 els.clearBtn.addEventListener('click', () => armClear(!state.clearArmed));
 buildTray();
+buildRings();
 $('btn-done').addEventListener('click', showParty);
 $('btn-new').addEventListener('click', () => { hideParty(); showScreen('shape'); });
 $('btn-photo').addEventListener('click', sharePhoto);
@@ -455,6 +505,12 @@ window.__salon = {
   nailCenterScreen(i) {
     const c = state.hand.nails[i].center;
     return toScreen(c.x, c.y);
+  },
+  RINGS,
+  ringPointScreen(i) {
+    const f = state.hand.fingers[i];
+    const p = axisPoint(f, f.ringT);
+    return toScreen(p.x, p.y);
   },
   brushShown,
   brushHandleScreen() {

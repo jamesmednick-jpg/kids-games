@@ -31,11 +31,13 @@ button:active { transform: translateY(2px); box-shadow: 0 1px 0 #e8a2b8; }
 .strip[hidden] { display: none; }
 #palette { grid-template-columns: repeat(6, minmax(0, 64px)); }
 #palette button { min-width: 0; min-height: 0; width: 100%; height: 100%; border-radius: 50%; border: 4px solid rgba(255,255,255,0.7); }
-#tray { grid-template-columns: repeat(4, minmax(0, 64px)); }
+#tray, #rings { grid-template-columns: repeat(4, minmax(0, 64px)); }
+#rings button { padding: 3px; }
+#rings canvas { width: 100%; height: 100%; display: block; }
 #tray button { min-width: 0; min-height: 0; width: 100%; height: 100%; font-size: 36px; }
-#tray button.selected { background: #fff3b0; box-shadow: 0 0 0 3px #b5179e, 0 3px 0 #e8a2b8; }
+#tray button.selected, #rings button.selected { background: #fff3b0; box-shadow: 0 0 0 3px #b5179e, 0 3px 0 #e8a2b8; }
 /* very short screens (a small phone with browser toolbars showing): smaller swatches rather than clipped ones */
-@media (max-height: 640px) { #palette { grid-template-columns: repeat(6, minmax(0, 52px)); } #tray { grid-template-columns: repeat(4, minmax(0, 52px)); } .strip { grid-auto-rows: 52px; gap: 4px; padding: 4px 6px 2px; } #tray button { font-size: 30px; } }
+@media (max-height: 640px) { #palette { grid-template-columns: repeat(6, minmax(0, 52px)); } #tray, #rings { grid-template-columns: repeat(4, minmax(0, 52px)); } .strip { grid-auto-rows: 52px; gap: 4px; padding: 4px 6px 2px; } #tray button { font-size: 30px; } }
 #palette button.selected { border-color: #fff; box-shadow: 0 0 0 3px #b5179e, 0 3px 0 #e8a2b8; transform: scale(1.08); }
 #stage { position: relative; flex: 1; min-height: 0; }
 #hand, #confetti { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
@@ -44,7 +46,7 @@ button:active { transform: translateY(2px); box-shadow: 0 1px 0 #e8a2b8; }
 .corner.left { left: 8px; } .corner.right { right: 8px; }
 .corner.bottom-left { top: auto; bottom: 10px; left: 10px; width: 76px; height: 76px; font-size: 40px; border-radius: 24px; opacity: 1; }
 .corner[hidden] { display: none; }
-#tools { flex: none; display: flex; gap: 6px; padding: 8px 6px; background: #ffc2d1; justify-content: center; }
+#tools { flex: none; display: flex; gap: 5px; padding: 8px 5px; background: #ffc2d1; justify-content: center; }
 #tools button { flex: 1; min-width: 0; max-width: 96px; height: 68px; font-size: 32px; }
 @media (max-height: 640px) { #tools button { height: 58px; font-size: 28px; } #tools { padding: 6px; } }
 #tools button.selected { background: #fff3b0; box-shadow: 0 0 0 3px #b5179e, 0 3px 0 #e8a2b8; }
