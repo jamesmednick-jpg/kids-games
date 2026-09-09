@@ -4,6 +4,30 @@ import { openSalon, zoomNail, mainPixel, stageBox } from './helpers.mjs';
 const ringPoint = (page, i) => page.evaluate(i => window.__salon.ringPointScreen(i), i);
 const ringsOf = page => page.evaluate(() => window.__salon.state.rings.slice());
 
+// The previews used to size themselves from their button, which measures
+// zero while the strip is hidden, so they were blank until you clicked one.
+test('every ring style is drawn as soon as the strip opens, with no clicking', async ({ page }) => {
+  await openSalon(page);
+  await page.click('#tool-ring');
+  await expect(page.locator('#rings')).toBeVisible();
+  const inked = await page.evaluate(() => Array.from(document.querySelectorAll('#rings canvas')).map(c => {
+    if (!c.width || !c.height) return 0;
+    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    let n = 0;
+    for (let i = 3; i < d.length; i += 4) if (d[i] > 20) n++;
+    return n;
+  }));
+  expect(inked).toHaveLength(8);
+  inked.forEach((n, i) => expect(n, `ring ${i} preview is blank`).toBeGreaterThan(2000));
+});
+
+test('the previews are already drawn before the strip is ever shown', async ({ page }) => {
+  await openSalon(page);
+  const inked = await page.evaluate(() => Array.from(document.querySelectorAll('#rings canvas'))
+    .map(c => (c.width && c.height ? c.getContext('2d').getImageData(0, 0, c.width, c.height).data.length : 0)));
+  expect(inked.every(n => n > 0)).toBe(true);
+});
+
 test('the ring tool swaps the top strip for ring styles', async ({ page }) => {
   await openSalon(page);
   await page.click('#tool-ring');

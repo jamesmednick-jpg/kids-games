@@ -267,23 +267,25 @@ function buildRings() {
     });
     b.addEventListener('pointerdown', e => startRingDrag(e, i));
     els.rings.append(b);
-    requestAnimationFrame(() => drawRingPreview(c, style));
+    drawRingPreview(c, style);
   });
 }
 
+// Drawn at a fixed size and scaled to the button by CSS. Measuring the
+// button instead would give zero while the strip is still hidden, which left
+// every preview blank until something rebuilt them.
+const RING_PREVIEW = 180;
 function drawRingPreview(canvas, style) {
-  const r = canvas.getBoundingClientRect();
-  if (!r.width) return;
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width = Math.round(r.width * dpr);
-  canvas.height = Math.round(r.height * dpr);
+  const S = RING_PREVIEW;
+  canvas.width = S;
+  canvas.height = S;
   const ctx = canvas.getContext('2d');
-  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, S, S);
   ctx.fillStyle = '#f0cfba';                       // a little finger to wear it
   ctx.beginPath();
-  ctx.roundRect(r.width / 2 - r.width * 0.17, r.height * 0.1, r.width * 0.34, r.height * 0.85, r.width * 0.17);
+  ctx.roundRect(S / 2 - S * 0.17, S * 0.1, S * 0.34, S * 0.85, S * 0.17);
   ctx.fill();
-  drawRingAt(ctx, r.width / 2, r.height * 0.62, 0, r.width * 0.36, style);
+  drawRingAt(ctx, S / 2, S * 0.62, 0, S * 0.36, style);
 }
 
 // Rings are dragged out of the strip and dropped onto a finger. A plain tap
