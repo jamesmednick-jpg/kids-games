@@ -1,0 +1,32 @@
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin: 0; height: 100%; background: #fdf6e3;
+  font-family: -apple-system, system-ui, sans-serif;
+  -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
+  overscroll-behavior: none; overflow: hidden;
+}
+button { font: inherit; border: 0; background: none; cursor: pointer; }
+
+#btn-mute, #btn-home {
+  position: fixed; top: max(12px, env(safe-area-inset-top)); z-index: 10;
+  width: 56px; height: 56px; border-radius: 50%; font-size: 26px;
+  background: #fff; box-shadow: 0 3px 0 #d9cdb0;
+}
+#btn-mute { right: 12px; }
+#btn-home { left: 12px; }
+#btn-mute:active, #btn-home:active { transform: translateY(2px); box-shadow: 0 1px 0 #d9cdb0; }
+
+#screen-home { display: flex; flex-direction: column; justify-content: center; height: 100%; padding: 16px; }
+#screen-home h1 { text-align: center; font-size: 34px; margin: 0 0 24px; color: #5b4636; }
+.tiles { display: grid; gap: 16px; max-width: 520px; width: 100%; margin: 0 auto; }
+@media (min-width: 520px) { .tiles { grid-template-columns: repeat(3, 1fr); } }
+.tile {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  min-height: 120px; background: #fff; border-radius: 28px; box-shadow: 0 4px 0 #d9cdb0;
+  color: #5b4636; font-weight: 800; font-size: 22px;
+}
+.tile .pic { font-size: 56px; line-height: 1; }
+.tile:active { transform: translateY(3px); box-shadow: 0 1px 0 #d9cdb0; }
+
+.play { position: relative; height: 100%; touch-action: none; }
+[hidden] { display: none !important; }

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#fdf6e3">
+<title>Number Buddies</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<button id="btn-mute" aria-label="Sound on or off">🔊</button>
+
+<section id="screen-home">
+  <h1>Number Buddies</h1>
+  <div class="tiles">
+    <button class="tile" data-mode="build"><span class="pic">🧱</span>Build</button>
+    <button class="tile" data-mode="add"><span class="pic">➕</span>Add</button>
+    <button class="tile" data-mode="play"><span class="pic">🎨</span>Play</button>
+  </div>
+</section>
+
+<section id="screen-build" class="play" hidden></section>
+<section id="screen-add" class="play" hidden></section>
+<section id="screen-play" class="play" hidden></section>
+
+<button id="btn-home" aria-label="Home" hidden>⬅️</button>
+
+<script type="module" src="./game.js"></script>
+</body>
+</html>
