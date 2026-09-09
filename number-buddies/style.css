@@ -115,3 +115,16 @@ button { font: inherit; border: 0; background: none; cursor: pointer; }
   50% { transform: scale(1.09); filter: brightness(1.22); }
 }
 #build-source.hint:active { animation: none; }
+
+/* ---------- add ---------- */
+#screen-add { display: grid; grid-template-rows: 1fr auto; padding: 84px 12px 24px; gap: 8px; }
+.add-row { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; justify-items: center; min-height: 0; height: 100%; }
+#add-plus { font-size: 48px; font-weight: 800; color: #5b4636; padding-bottom: 8px; }
+.draggable { touch-action: none; transition: transform 160ms ease; cursor: grab; }
+#add-result { display: grid; place-items: end center; min-height: 0; height: 100%; }
+.cube.counting { outline: 4px solid rgba(255, 255, 255, 0.9); outline-offset: -4px; }
+#add-again {
+  justify-self: center; width: 92px; height: 92px; border-radius: 50%; font-size: 44px;
+  background: #fff; box-shadow: 0 4px 0 #d9cdb0;
+}
+#add-again:active { transform: translateY(3px); box-shadow: 0 1px 0 #d9cdb0; }
