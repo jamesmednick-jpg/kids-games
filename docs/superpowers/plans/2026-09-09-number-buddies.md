@@ -2832,3 +2832,34 @@ Then on the phone: open `https://jamesmednick-jpg.github.io/kids-games/`, tap Nu
 git add tests/e2e/nb-kidproof.spec.mjs README.md
 git commit -m "Kidproof Number Buddies and document it"
 ```
+
+---
+
+## Phase 2 (2026-09-09): Play becomes the worlds
+
+Spec: the "Play — the worlds" and "Arms" sections of the design spec.
+Executed inline in the same session; recorded here so the plan and the code
+agree.
+
+### Task 11: Worlds
+
+**Files:** create `number-buddies/worlds.js`; modify `play.js` (rewrite),
+`render.js` (arms), `index.html` (picker + scene markup), `style.css`,
+`sw.js`, `tools/make-voice.mjs` (fall clips). Test: `tests/e2e/nb-world.spec.mjs`.
+
+**Interfaces:**
+- `WORLDS: Array<{ id, name, platforms: Array<{x, y, w}> }>` — positions as
+  fractions of the board (x, w of width; y = platform top as a fraction of
+  height from the ground).
+- `drawWorld(board, world)` — paints sky, scenery, ground and platforms;
+  returns `{ platforms: Array<{left, top, width}> }` in board pixels, top
+  measured from the ground.
+- `mountPlay(host, { max })` keeps its shape and test hooks: `state.towers`
+  (now `{ id, n, x, y, vx, vy, held, resting }`), `addTower(n, x, y)`,
+  `join(a, b)`, `splitTop(id)`, plus `pickWorld(id)`, `state.world`, and
+  `step(dt)` so tests can advance physics deterministically.
+- Buddies gain `.arms` with classes `up` (held/falling) and `wave` (dance).
+
+Steps follow the usual shape: failing tests first, scenery next (checkpoint:
+screenshots of the four worlds), then the physics loop, then merge-by-drop,
+then fling, then a kidproof pass, then publish.

@@ -53,7 +53,8 @@ number-buddies/
   audio.js                 clip playback + synthesised sound effects
   build.js                 Build mode
   add.js                   Add mode
-  play.js                  Play mode
+  play.js                  Play mode: the world picker and the physics loop
+  worlds.js                the four worlds: sky, scenery, platform layouts
   nudge.js                 the idle hint clock, shared by Build and Add
   voice/                   pre-generated .m4a speech clips
     manifest.json          clip id -> filename, generated
@@ -223,6 +224,7 @@ writes one `.m4a` per entry plus `voice/manifest.json`. Clips needed:
   2..MAX+2, covering an overshoot of up to two cubes past the largest target.
 - `join` — "let's count them all!", played once as a merged tower begins its
   recount.
+- `fall-1`, `fall-2` — "Wheeeeee!", "Whoooa!" — a buddy in the air.
 - `nudge-tap` — "tap another block!"
 - `nudge-drag` — "push them together!"
 - `mode-build`, `mode-add`, `mode-play` — spoken when a home tile is tapped.
@@ -294,14 +296,51 @@ The drag has generous tolerance: releasing anywhere in the middle third of
 the screen counts as "together". Tapping either buddy instead of dragging
 also merges them, after a `nudge-drag` hint.
 
-### Play
+### Play — the worlds
 
-A bin of loose cubes along the bottom, unlimited. Dragging a cube out
-creates a one-tower. Dropping a cube or tower onto another joins them.
-Dragging the top cube off a tower splits it. Any tower whose height changes
-speaks its new number and shows its numeral. Towers keep their faces.
+*Revised 2026-09-09 after the first play sessions: the flat table felt dead.
+Play is now a place with gravity.*
 
-A sweep button clears the board. Nothing else. No goals, no prompts.
+Tapping Play shows a **world picker**: four big picture tiles, all available
+always (no levels, no unlocks — the picker is scenery, not progress).
+
+| World | Sky | Platforms she can stand a buddy on |
+|-------|-----|------------------------------------|
+| Meadow | blue with a sun | a tree stump, a rock, a fence post |
+| Clouds | pale blue | three fluffy clouds at different heights |
+| Rainbow | sunset | a rainbow arc (three stepped segments), a small cloud |
+| Night | deep blue with stars and a moon | two crescent moons, a shooting-star trail |
+
+Each world is a full-screen scene: gradient sky, CSS/SVG scenery, a ground
+strip along the bottom, and platforms placed in fractions of the screen so
+they scale. Platforms are drawn in the world's style but the physics sees
+them as flat-topped rectangles.
+
+**Gravity.** Every tower in a world is either held, resting, or falling.
+Let go and it falls — arms up, *"Wheeeee!"* — and lands with a squash and a
+boing on the ground, on a platform, or on top of another buddy. Letting go
+mid-swing **flings** it: the release carries the last few frames of finger
+velocity, so she can toss a Three across the sky onto a cloud.
+
+**Adding up by dropping.** A tower that lands on top of another (their
+columns overlapping by at least half a cube) joins it: the show's merge beat
+— flash, stars, the faceless sum counted from one with each cube igniting,
+the face popping on, the dance — but **no confetti and no fireworks**; those
+stay with Build and Add. A join that would pass `MAX_NUMBER` bounces off
+instead of merging.
+
+**The rest stays.** The bin gives a One. Pulling the top cube off a tower
+splits it (the cube comes away in her hand). Sweep clears the world. A small
+worlds button returns to the picker; the home arrow goes home.
+
+Physics constants live at the top of `play.js`: gravity, terminal speed,
+bounce, fling scale. They are parent-tunable like everything else.
+
+### Arms
+
+Every buddy grows two little stick arms on its top cube. Down and slightly
+out when standing; **straight up** when held or falling; **waving** during
+the dance. Eight keeps its eight feature-arms as well.
 
 ## Guidance
 
