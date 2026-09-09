@@ -112,6 +112,25 @@ are decorative.
   the saved photo. Styles live in RINGS in `nail-salon/render.js`.
 - The whole-hand view is framed from the hand's measured extent rather than
   the logical page, so the hand fills the phone screen with no wasted margin.
+- Finish pass (2026-09-09), matching the soft airbrushed look of salon art:
+  - No outline is drawn around the hand. Its edge is a soft inner rim made
+    of three strokes of the silhouette, clipped to itself.
+  - Skin is layered: a broad form light on the back of the hand, a key light
+    from the upper left falling to shadow at the lower right, a rim light and
+    a three-pass core shadow down each finger, a sheen along each finger, and
+    tendons that fade in and out so they never pool. Every shading stroke
+    hugs a path that is already part of the silhouette, so none can seam.
+  - Polish is glossy: a top light, a hot specular streak, a small secondary
+    sparkle and a bright wet rim, all clipped to the nail. Each nail also
+    casts a soft contact shadow onto the skin, clipped to the hand so it
+    never spills onto the background.
+  - Rings wrap the finger rather than sitting on it. Both band edges bow
+    toward the viewer, the ends darken as the metal turns away, a specular
+    runs along the band, and the ring casts a shadow down the finger. Gems
+    are faceted with prongs, a seat shadow and a sparkle.
+  - Everything is vector. Soft edges come from layered gradients and
+    multi-pass strokes rather than blur filters, so the look is identical on
+    every phone and cheap enough to redraw each frame.
 - Brush cursor (amended 2026-09-09): while the brush tool paints, a small
   polish brush (bristles in the current color, pale handle tilted up-right)
   is drawn at the touch point. With a mouse it also follows the pointer

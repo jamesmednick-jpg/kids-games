@@ -18,7 +18,7 @@ const TIP = {
   pointed: { f: t => Math.abs(t),                  tipH: w => w * 1.0,  hScale: 1.52, over: 0.53 },
 };
 
-export function nailPolygon(shape, rect, samples = 24) {
+export function nailPolygon(shape, rect, samples = 44) {
   const { x, y, w, h } = rect;
   const s = TIP[shape];
   const tipH = s.tipH(w);

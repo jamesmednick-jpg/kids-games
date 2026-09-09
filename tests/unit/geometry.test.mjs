@@ -19,7 +19,7 @@ test('logical space is 600 by 800', () => {
 for (const shape of SHAPES) {
   test(`nailPolygon(${shape}) stays inside its rect and has many points`, () => {
     const pts = nailPolygon(shape, RECT);
-    assert.ok(pts.length >= 40);
+    assert.ok(pts.length >= 80);   // smooth enough to stay curved when zoomed in
     for (const [x, y] of pts) {
       assert.ok(x >= RECT.x - 1e-9 && x <= RECT.x + RECT.w + 1e-9, `x ${x}`);
       assert.ok(y >= RECT.y - 1e-9 && y <= RECT.y + RECT.h + 1e-9, `y ${y}`);
@@ -34,12 +34,12 @@ for (const shape of SHAPES) {
 
 test('square tip is nearly flat, pointed tip is a point', () => {
   const sq = nailPolygon('square', RECT);
-  const topSq = sq.slice(0, 25).map(p => p[1]);
+  const topSq = sq.slice(0, 45).map(p => p[1]);
   assert.ok(Math.max(...topSq) - Math.min(...topSq) < RECT.w * 0.1);
 
   const pt = nailPolygon('pointed', RECT);
   // the middle top sample is the highest point and corners are much lower
-  assert.ok(pt[12][1] < pt[0][1] - RECT.w * 0.5);
+  assert.ok(pt[22][1] < pt[0][1] - RECT.w * 0.5);
 });
 
 test('round nail excludes its top corners', () => {

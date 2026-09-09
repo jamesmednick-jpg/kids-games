@@ -592,6 +592,12 @@ window.__salon = {
   },
   RINGS,
   ringDragging: () => !!(ringDrag && ringDrag.moved),
+  drawRing: (ctx, x, y, angle, fw, style) => drawRingAt(ctx, x, y, angle, fw, RINGS[style]),
+  fingerEdgeScreen(i, t, offset) {
+    const f = state.hand.fingers[i];
+    const a = axisPoint(f, t), half = widthAt(f, t) / 2 + offset;
+    return toScreen(a.x + Math.cos(f.angle) * half, a.y + Math.sin(f.angle) * half);
+  },
   ringPointScreen(i) {
     const f = state.hand.fingers[i];
     const p = axisPoint(f, f.ringT);
