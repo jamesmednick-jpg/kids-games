@@ -2,6 +2,7 @@ import { MAX_SUPPORTED } from './blocks.js';
 import { initAudio, setMuted, say } from './audio.js';
 import { mountBuild } from './build.js';
 import { mountAdd } from './add.js';
+import { mountPlay } from './play.js';
 
 // ===== Parent config: edit these freely =====
 export const MAX_NUMBER = 10;        // 10 or 20
@@ -21,11 +22,13 @@ export const state = { screen: 'home', muted: false };
 export function go(name) {
   if (state.screen === 'build' && name !== 'build') build.stop();
   if (state.screen === 'add' && name !== 'add') add.stop();
+  if (state.screen === 'play' && name !== 'play') play.stop();
   state.screen = name;
   for (const s of SCREENS) $(`screen-${s}`).hidden = s !== name;
   $('btn-home').hidden = name === 'home';
   if (name === 'build') build.start();
   if (name === 'add') add.start();
+  if (name === 'play') play.start();
 }
 
 for (const btn of document.querySelectorAll('[data-mode]')) {
@@ -47,7 +50,8 @@ const nudgeMs = Number(new URLSearchParams(location.search).get('nudge')) || IDL
 
 const build = mountBuild($('screen-build'), { max: MAX_NUMBER, nudgeMs });
 const add = mountAdd($('screen-add'), { max: MAX_NUMBER, nudgeMs });
-Object.assign(window.__nb, { build, add, nudgeMs });
+const play = mountPlay($('screen-play'), { max: MAX_NUMBER });
+Object.assign(window.__nb, { build, add, play, nudgeMs });
 
 go('home');
 

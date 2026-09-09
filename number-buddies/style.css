@@ -128,3 +128,21 @@ button { font: inherit; border: 0; background: none; cursor: pointer; }
   background: #fff; box-shadow: 0 4px 0 #d9cdb0;
 }
 #add-again:active { transform: translateY(3px); box-shadow: 0 1px 0 #d9cdb0; }
+
+/* ---------- play ---------- */
+#screen-play { display: grid; grid-template-rows: 1fr auto; padding: 84px 0 0; }
+#play-board { position: relative; min-height: 0; overflow: hidden; }
+.tower { position: absolute; touch-action: none; cursor: grab; }
+.tower.lifted { z-index: 5; filter: drop-shadow(0 10px 8px rgba(58,44,34,0.25)); }
+.play-bar { display: flex; align-items: center; justify-content: center; gap: 24px; padding: 12px 16px max(20px, env(safe-area-inset-bottom)); }
+#play-bin {
+  width: 92px; height: 92px; border-radius: 12%; background: #8d6e52;
+  box-shadow: 0 0 0 1.5px rgba(58,44,34,0.10), 0 6px 0 rgba(58,44,34,0.28),
+    inset 0 6px 0 rgba(255,255,255,0.30), inset 0 -7px 0 rgba(0,0,0,0.14);
+}
+#play-bin:active { transform: translateY(4px); }
+#play-sweep {
+  position: absolute; right: 16px; bottom: max(24px, env(safe-area-inset-bottom));
+  width: 64px; height: 64px; border-radius: 50%; font-size: 30px; background: #fff; box-shadow: 0 4px 0 #d9cdb0;
+}
+#play-sweep:active { transform: translateY(3px); box-shadow: 0 1px 0 #d9cdb0; }

@@ -106,10 +106,10 @@ export function drawBuddy(host, n, { availableH = host.clientHeight || 520, size
     const part = document.createElement('div');
     part.className = 'part';
     part.dataset.partN = pn;
-    for (let i = pn - 1; i >= 0; i--) {   // top cube first, so index 0 is the top
+    for (let i = pn - 1; i >= 0; i--) {   // top cube first; data-index 0 is the top
       const cube = document.createElement('div');
       cube.className = 'cube';
-      cube.dataset.index = i;
+      cube.dataset.index = pn - 1 - i;
       cube.style.cssText = `width:${size}px;height:${size}px;background:${COLORS[pn]}`;
       if (faces && pi === 0 && i === pn - 1) {
         cube.innerHTML = FEATURES[pn] === 'eye' ? FACE_GRIN_ONLY : FACE_TWO_EYES;
