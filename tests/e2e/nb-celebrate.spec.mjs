@@ -16,8 +16,10 @@ async function openAdd(page, a, b) {
   await page.click('[data-mode="add"]');
   await page.waitForFunction(() => window.__nb.add && window.__nb.add.state.a > 0);
   await page.evaluate(([a, b]) => window.__nb.add.setPair(a, b), [a, b]);
+  await page.waitForFunction(() => window.__nb.add.state.towers.every(t => t.resting));
   await page.evaluate(() => { window.__nb.spoken.length = 0; });
 }
+const joinThem = page => page.evaluate(() => { const [a, b] = window.__nb.add.state.towers.map(t => t.id); window.__nb.add.join(a, b); });
 
 test('completing a buddy in Build makes it dance under confetti', async ({ page }) => {
   await openBuild(page, 3);
@@ -56,27 +58,25 @@ test('the confetti is gone within a few seconds', async ({ page }) => {
 
 test('merging in Add bursts stars, lights the cubes in turn, then pops the face on', async ({ page }) => {
   await openAdd(page, 2, 3);
-  await page.click('#add-a');
-  await page.waitForFunction(() => window.__nb.add.state.merged);
-  await expect(page.locator('#add-a.merging')).toHaveCount(1);
+  await joinThem(page);
   await expect(page.locator('#screen-add .star')).not.toHaveCount(0, { timeout: 2000 });
   // While it counts, the result is faceless and cubes light up one by one.
   await page.waitForFunction(() => window.__nb.spoken.includes('count-2'));
-  expect(await page.locator('#add-result .face').count()).toBe(0);
-  expect(await page.locator('#add-result .cube.lit').count()).toBeGreaterThanOrEqual(1);
+  expect(await page.locator('#add-board .tower .face').count()).toBe(0);
+  expect(await page.locator('#add-board .tower .cube.lit').count()).toBeGreaterThanOrEqual(1);
   // The face arrives with the buddy's name.
-  await page.waitForFunction(() => window.__nb.spoken.includes('is-5'));
-  await expect(page.locator('#add-result .face.pop')).toHaveCount(1);
-  await expect(page.locator('#add-result .buddy.dance')).toHaveCount(1);
+  await page.waitForFunction(() => window.__nb.spoken.includes('is-5'), null, { timeout: 15000 });
+  await expect(page.locator('#add-board .tower .face.pop')).toHaveCount(1);
+  await expect(page.locator('#add-board .tower .buddy.dance')).toHaveCount(1);
   expect(await page.locator('#screen-add .confetti-piece').count()).toBeGreaterThan(10);
   expect(await page.locator('#screen-add .firework').count()).toBeGreaterThan(10);   // five is a milestone
 });
 
 test('a non-milestone sum in Add dances without fireworks', async ({ page }) => {
   await openAdd(page, 1, 2);
-  await page.click('#add-a');
-  await page.waitForFunction(() => window.__nb.spoken.includes('is-3'));
-  await expect(page.locator('#add-result .buddy.dance')).toHaveCount(1);
+  await joinThem(page);
+  await page.waitForFunction(() => window.__nb.spoken.includes('is-3'), null, { timeout: 15000 });
+  await expect(page.locator('#add-board .tower .buddy.dance')).toHaveCount(1);
   expect(await page.locator('#screen-add .firework').count()).toBe(0);
 });
 

@@ -66,6 +66,13 @@ export function say(id) {
   return turn;
 }
 
+// A reaction — a giggle, a "wheee" — plays straight away over whatever is
+// queued, and never holds the lesson up.
+export function sayNow(id) {
+  spoken.push(id);
+  return play(id);
+}
+
 // Enqueues every clip at once, in order; resolves when the last has played.
 export function sayAll(ids) {
   let last = Promise.resolve();

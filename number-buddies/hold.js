@@ -1,5 +1,5 @@
 import { sparks } from './render.js';
-import { say, glint } from './audio.js';
+import { sayNow, glint } from './audio.js';
 
 let lastGiggle = -Infinity;
 
@@ -20,7 +20,7 @@ export function makeHold(screen) {
       setLean(0);
       // A giggle on the way up, but not on every single grab.
       const now = performance.now();
-      if (now - lastGiggle > 1800) { say(`pickup-${1 + Math.floor(Math.random() * 3)}`); lastGiggle = now; }
+      if (now - lastGiggle > 1800) { sayNow(`pickup-${1 + Math.floor(Math.random() * 3)}`); lastGiggle = now; }
       // Lean fades back toward upright when the drag pauses.
       clearInterval(decay);
       decay = setInterval(() => { if (cur) setLean(cur.lean * 0.8); }, 60);

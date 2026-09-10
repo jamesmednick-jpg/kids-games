@@ -8,12 +8,15 @@ async function openAdd(page, a = 2, b = 3) {
   await page.click('[data-mode="add"]');
   await page.waitForFunction(() => window.__nb.add && window.__nb.add.state.a > 0);
   await page.evaluate(([a, b]) => window.__nb.add.setPair(a, b), [a, b]);
+  await page.waitForFunction(() => window.__nb.add.state.towers.every(t => t.resting));
   await page.evaluate(() => { window.__nb.spoken.length = 0; });
 }
 
+const A = '#add-board .tower:nth-child(1 of .tower)';
+const B = '#add-board .tower:nth-child(2 of .tower)';
 const center = async (page, sel) => {
   const b = await page.locator(sel).boundingBox();
-  return { x: b.x + b.width / 2, y: b.y + b.height - 30 };
+  return { x: b.x + b.width / 2, y: b.y + b.height - 20 };
 };
 
 test('every buddy on every screen is alive', async ({ page }) => {
@@ -33,66 +36,67 @@ test('every buddy on every screen is alive', async ({ page }) => {
 
 test('buddies breathe and blink', async ({ page }) => {
   await openAdd(page);
-  const names = await page.locator('#add-a .parts').evaluate(el => getComputedStyle(el).animationName);
+  const names = await page.locator(`${A} .parts`).evaluate(el => getComputedStyle(el).animationName);
   expect(names).toContain('breathe');
-  expect(await page.locator('#add-a .face .lid').count()).toBe(2);
-  const lidAnim = await page.locator('#add-a .face .lid').first().evaluate(el => getComputedStyle(el).animationName);
+  expect(await page.locator(`${A} .face .lid`).count()).toBe(2);
+  const lidAnim = await page.locator(`${A} .face .lid`).first().evaluate(el => getComputedStyle(el).animationName);
   expect(lidAnim).toContain('blink');
 });
 
 test('eyes follow her finger', async ({ page }) => {
   await openAdd(page);
-  const b = await page.locator('#add-b').boundingBox();
+  const b = await page.locator(B).boundingBox();
   await page.mouse.move(10, b.y + 10);
   await page.waitForTimeout(80);
-  const left = await page.locator('#add-b .face').evaluate(el => parseFloat(el.style.getPropertyValue('--px')));
+  const left = await page.locator(`${B} .face`).evaluate(el => parseFloat(el.style.getPropertyValue('--px')));
   await page.mouse.move(380, b.y + 10);
   await page.waitForTimeout(80);
-  const right = await page.locator('#add-b .face').evaluate(el => parseFloat(el.style.getPropertyValue('--px')));
+  const right = await page.locator(`${B} .face`).evaluate(el => parseFloat(el.style.getPropertyValue('--px')));
   expect(left).toBeLessThan(0);
   expect(right).toBeGreaterThan(0);
 });
 
 test('a held buddy lifts, leans into the drag, trails sparkles, and settles when let go', async ({ page }) => {
   await openAdd(page);
-  const from = await center(page, '#add-a');
+  const from = await center(page, A);
   await page.mouse.move(from.x, from.y);
   await page.mouse.down();
-  await expect(page.locator('#add-a.held')).toHaveCount(1);
+  await expect(page.locator(`${A}.held`)).toHaveCount(1);
   expect((await page.evaluate(() => window.__nb.spoken)).some(id => id.startsWith('pickup-'))).toBeTruthy();
-  for (let i = 1; i <= 6; i++) { await page.mouse.move(from.x + i * 12, from.y, { steps: 1 }); await page.waitForTimeout(16); }
-  const lean = await page.locator('#add-a').evaluate(el => parseFloat(el.style.getPropertyValue('--lean')));
+  for (let i = 1; i <= 6; i++) { await page.mouse.move(from.x + i * 12, from.y - i * 4, { steps: 1 }); await page.waitForTimeout(16); }
+  const lean = await page.locator(A).evaluate(el => parseFloat(el.style.getPropertyValue('--lean')));
   expect(lean).toBeGreaterThan(0);
   expect(await page.locator('#screen-add .spark').count()).toBeGreaterThan(0);
-  await page.mouse.move(from.x + 40, from.y, { steps: 2 });   // a little back, not a merge
+  await page.mouse.move(from.x + 40, from.y - 10, { steps: 2 });   // a little back, nowhere near the other
   await page.mouse.up();
-  await expect(page.locator('#add-a.held')).toHaveCount(0);
-  await expect(page.locator('#add-a.settle')).toHaveCount(1);
+  await expect(page.locator(`${A}.held`)).toHaveCount(0);
+  await expect(page.locator(`${A}.settle`)).toHaveCount(1);
 });
 
 test('the other buddy beckons as she brings one close, with sparkles between them', async ({ page }) => {
   await openAdd(page);
-  const from = await center(page, '#add-a');
-  const to = await center(page, '#add-b');
+  const from = await center(page, A);
+  const to = await center(page, B);
   await page.mouse.move(from.x, from.y);
   await page.mouse.down();
-  await page.mouse.move(from.x + (to.x - from.x) * 0.55, from.y, { steps: 6 });
+  await page.mouse.move(from.x + (to.x - from.x) * 0.55, from.y - 120, { steps: 6 });   // close, but up in the air
   await page.waitForTimeout(150);
-  await expect(page.locator('#add-b.beckon')).toHaveCount(1);
+  await expect(page.locator(`${B}.beckon`)).toHaveCount(1);
   expect(await page.locator('#screen-add .spark').count()).toBeGreaterThan(0);
-  await page.mouse.move(from.x, from.y, { steps: 4 });
+  await page.mouse.move(from.x - 20, from.y - 120, { steps: 4 });
   await page.waitForTimeout(100);
-  await expect(page.locator('#add-b.beckon')).toHaveCount(0);
+  await expect(page.locator(`${B}.beckon`)).toHaveCount(0);
   await page.mouse.up();
 });
 
 test('coming together flashes, then glitters the whole time it counts', async ({ page }) => {
   await openAdd(page, 3, 4);
-  await page.click('#add-a');
+  const [a, b] = await page.evaluate(() => window.__nb.add.state.towers.map(t => t.id));
+  await page.evaluate(([a, b]) => window.__nb.add.join(a, b), [a, b]);
   await expect(page.locator('#screen-add .flash')).not.toHaveCount(0, { timeout: 1500 });
   await page.waitForFunction(() => window.__nb.spoken.includes('count-3'));
   expect(await page.locator('#screen-add .spark').count()).toBeGreaterThan(0);
-  await page.waitForFunction(() => window.__nb.spoken.includes('is-7'));
+  await page.waitForFunction(() => window.__nb.spoken.includes('is-7'), null, { timeout: 15000 });
 });
 
 test('in Build the cube flies from the button onto the tower and lands with sparkles', async ({ page }) => {

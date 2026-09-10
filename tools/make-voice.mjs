@@ -71,8 +71,8 @@ export function buildPhrases(max) {
     }
   }
   // Flying through the air.
-  ['Wheeeeeeee!', 'Whoooooa!'].forEach((text, i) =>
-    out.push(narrated(`fall-${i + 1}`, `[[emph +]] ${text}`, { pbas: NARRATOR.pbas + 10, rate: NARRATOR.rate - 25 })));
+  ['Wheeee!', 'Whoooa!'].forEach((text, i) =>
+    out.push(narrated(`fall-${i + 1}`, `[[emph +]] ${text}`, { pbas: NARRATOR.pbas + 10, rate: NARRATOR.rate + 10 })));
   // Being picked up.
   ['Wheee!', 'Hee hee hee!', 'Up we go!'].forEach((text, i) =>
     out.push(narrated(`pickup-${i + 1}`, `[[emph +]] ${text}`, { pbas: NARRATOR.pbas + 8, rate: NARRATOR.rate + 20 })));

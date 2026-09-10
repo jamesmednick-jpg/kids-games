@@ -3,7 +3,7 @@
 const CACHE = 'number-buddies-v7';
 const FILES = [
   './', './index.html', './style.css', './game.js', './blocks.js', './render.js',
-  './audio.js', './build.js', './add.js', './play.js', './worlds.js', './nudge.js', './hold.js', './manifest.webmanifest', './voice/manifest.json',
+  './audio.js', './build.js', './add.js', './play.js', './world.js', './worlds.js', './nudge.js', './hold.js', './manifest.webmanifest', './voice/manifest.json',
   './icon-192.png', './icon-512.png', './apple-touch-icon.png',
 ];
 

@@ -1,21 +1,44 @@
 import { test, expect } from '@playwright/test';
 
+// Add: a challenge on a little world with the same physics as Play. Two
+// buddies stand apart with a ghost of the answer between them; carry one to
+// the other — push them together or drop one on top — and they add up.
+
 async function openAdd(page, a = null, b = null) {
   await page.goto('/number-buddies/index.html');
   await page.click('[data-mode="add"]');
   await page.waitForFunction(() => window.__nb.add && window.__nb.add.state.a > 0);
   if (a) await page.evaluate(([a, b]) => window.__nb.add.setPair(a, b), [a, b]);
+  await page.waitForFunction(() => window.__nb.add.state.towers.every(t => t.resting));
   await page.evaluate(() => { window.__nb.spoken.length = 0; });
 }
 
-async function dragTogether(page) {
-  const from = await page.locator('#add-a').boundingBox();
-  const to = await page.locator('#add-b').boundingBox();
-  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+const tower = (page, i) => page.locator('#add-board .tower').nth(i);
+const grip = async (page, i) => { const b = await tower(page, i).boundingBox(); return { x: b.x + b.width / 2, y: b.y + b.height - 20 }; };
+
+// Carry the first buddy over and drop it onto the second.
+async function dropOnto(page) {
+  const from = await grip(page, 0);
+  const to = await tower(page, 1).boundingBox();
+  await page.mouse.move(from.x, from.y);
   await page.mouse.down();
-  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 12 });
+  await page.mouse.move(to.x + to.width / 2, to.y - 80, { steps: 14 });
+  await page.waitForTimeout(60);
   await page.mouse.up();
 }
+
+// Carry the first buddy sideways into the second along the ground.
+async function pushInto(page) {
+  const from = await grip(page, 0);
+  const to = await tower(page, 1).boundingBox();
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  await page.mouse.move(to.x + to.width / 2, from.y, { steps: 16 });
+  await page.waitForTimeout(60);
+  await page.mouse.up();
+}
+
+const merged = page => page.waitForFunction(() => window.__nb.add.state.merged, null, { timeout: 15000 });
 
 test('the first challenge is always One and One, asked out loud, with a ghost of the answer', async ({ page }) => {
   await page.goto('/number-buddies/index.html');
@@ -28,14 +51,100 @@ test('the first challenge is always One and One, asked out loud, with a ghost of
   await expect(page.locator('#add-target .sign')).toHaveText('2');
 });
 
-test('after they come together, the sum is said out loud and the ghost fills in', async ({ page }) => {
+test('two buddies stand on the ground apart, with a plus between them', async ({ page }) => {
   await openAdd(page, 2, 3);
-  await page.click('#add-a');
+  await expect(page.locator('#add-board .tower')).toHaveCount(2);
+  expect(await tower(page, 0).locator('.cube').count()).toBe(2);
+  expect(await tower(page, 1).locator('.cube').count()).toBe(3);
+  await expect(page.locator('#add-plus')).toBeVisible();
+  const ys = await page.evaluate(() => window.__nb.add.state.towers.map(t => t.y));
+  expect(ys).toEqual([0, 0]);
+  const a = await tower(page, 0).boundingBox(), b = await tower(page, 1).boundingBox();
+  expect(b.x - (a.x + a.width)).toBeGreaterThan(80);
+});
+
+test('both buddies and the ghost share one cube size', async ({ page }) => {
+  await openAdd(page, 2, 3);
+  const w = await page.locator('#add-board .cube, #add-target .cube').evaluateAll(els => els.map(e => e.getBoundingClientRect().width));
+  expect(Math.max(...w) - Math.min(...w)).toBeLessThan(1);
+  expect(Math.min(...w)).toBeGreaterThanOrEqual(44);
+});
+
+test('she can carry a buddy anywhere and drop it, and it just falls back down', async ({ page }) => {
+  await openAdd(page, 2, 3);
+  const from = await grip(page, 0);
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  await page.mouse.move(from.x + 30, from.y - 220, { steps: 10 });
+  await page.waitForTimeout(80);
+  const held = await page.evaluate(() => window.__nb.add.state.towers[0]);
+  expect(held.y).toBeGreaterThan(150);
+  await page.mouse.up();
+  await page.waitForFunction(() => window.__nb.add.state.towers.every(t => t.resting), null, { timeout: 5000 });
+  const t = await page.evaluate(() => window.__nb.add.state.towers[0]);
+  expect(t.y).toBe(0);
+  expect(await page.locator('#add-board .tower').count()).toBe(2);      // no merge: they never touched
+  expect(await page.evaluate(() => window.__nb.add.state.merged)).toBe(false);
+});
+
+test('dropping one buddy onto the other adds them up', async ({ page }) => {
+  await openAdd(page, 2, 3);
+  await dropOnto(page);
+  await merged(page);
+  await expect(page.locator('#add-board .tower')).toHaveCount(1);
+  await expect(page.locator('#add-board .tower .sign')).toHaveText('5');
+  expect(await page.locator('#add-board .tower .cube').count()).toBe(5);
+});
+
+test('pushing them together along the ground adds them up too', async ({ page }) => {
+  await openAdd(page, 4, 1);
+  await pushInto(page);
+  await merged(page);
+  await expect(page.locator('#add-board .tower')).toHaveCount(1);
+  expect(await page.evaluate(() => window.__nb.add.state.towers[0].n)).toBe(5);
+});
+
+test('the merged tower recounts from one, then says the sum plainly, then hello', async ({ page }) => {
+  await openAdd(page, 2, 3);
+  await dropOnto(page);
   await page.waitForFunction(() => window.__nb.spoken.includes('is-5'), null, { timeout: 15000 });
   const spoken = await page.evaluate(() => window.__nb.spoken);
+  expect(spoken.filter(id => id.startsWith('count-'))).toEqual(['count-1', 'count-2', 'count-3', 'count-4', 'count-5']);
+  expect(spoken).toContain('join');
   expect(spoken.indexOf('sum-2-3')).toBeGreaterThan(spoken.indexOf('count-5'));
   expect(spoken.indexOf('sum-2-3')).toBeLessThan(spoken.indexOf('is-5'));
+  expect(spoken.some(id => id.startsWith('cheer-'))).toBeTruthy();
   await expect(page.locator('#add-target.matched')).toHaveCount(1);
+});
+
+test('again offers a new challenge within the maximum', async ({ page }) => {
+  await openAdd(page);
+  await dropOnto(page);
+  await merged(page);
+  await page.waitForSelector('#add-again:not([hidden])');
+  await page.click('#add-again');
+  await page.waitForFunction(() => !window.__nb.add.state.merged);
+  const { a, b, max } = await page.evaluate(() => ({ a: window.__nb.add.state.a, b: window.__nb.add.state.b, max: window.__nb.settings.MAX_NUMBER }));
+  expect(a).toBeGreaterThanOrEqual(1);
+  expect(b).toBeGreaterThanOrEqual(1);
+  expect(a + b).toBeLessThanOrEqual(max);
+  await expect(page.locator('#add-board .tower')).toHaveCount(2);
+});
+
+test('a Ten never ends up under the again button', async ({ page }) => {
+  await openAdd(page, 5, 5);
+  await dropOnto(page);
+  await merged(page);
+  await page.waitForSelector('#add-again:not([hidden])');
+  const hit = await page.evaluate(() => {
+    const b = document.getElementById('add-again');
+    const r = b.getBoundingClientRect();
+    const el = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+    return el === b || b.contains(el);
+  });
+  expect(hit).toBeTruthy();
+  await page.click('#add-again');
+  await page.waitForFunction(() => !window.__nb.add.state.merged);
 });
 
 test('challenges ramp: the first few sums are small', async ({ page }) => {
@@ -48,100 +157,6 @@ test('challenges ramp: the first few sums are small', async ({ page }) => {
     await page.evaluate(() => window.__nb.add.nextPair());
   }
   expect(Math.max(...sums)).toBeLessThanOrEqual(4);
-});
-
-test('two buddies stand apart with a plus between them', async ({ page }) => {
-  await openAdd(page, 2, 3);
-  expect(await page.locator('#add-a .cube').count()).toBe(2);
-  expect(await page.locator('#add-b .cube').count()).toBe(3);
-  await expect(page.locator('#add-plus')).toBeVisible();
-  await expect(page.locator('#add-a .sign')).toHaveText('2');
-  await expect(page.locator('#add-b .sign')).toHaveText('3');
-});
-
-test('both buddies and the result share one cube size', async ({ page }) => {
-  await openAdd(page, 2, 3);
-  const a = await page.locator('#add-a .cube').first().boundingBox();
-  const b = await page.locator('#add-b .cube').first().boundingBox();
-  expect(a.width).toBeCloseTo(b.width, 0);
-  await dragTogether(page);
-  await page.waitForSelector('#add-result .cube');
-  const r = await page.locator('#add-result .cube').first().boundingBox();
-  expect(r.width).toBeCloseTo(a.width, 0);
-});
-
-test('dragging them together makes the sum', async ({ page }) => {
-  await openAdd(page, 2, 3);
-  await dragTogether(page);
-  await page.waitForSelector('#add-result .cube');
-  expect(await page.locator('#add-result .cube').count()).toBe(5);
-  await expect(page.locator('#add-result .sign')).toHaveText('5');
-  await expect(page.locator('#add-a')).toBeHidden();
-  await expect(page.locator('#add-b')).toBeHidden();
-});
-
-test('the merged tower recounts from one, not on from the first addend', async ({ page }) => {
-  await openAdd(page, 2, 3);
-  await dragTogether(page);
-  await page.waitForFunction(() => window.__nb.spoken.includes('is-5'));
-  const spoken = await page.evaluate(() => window.__nb.spoken);
-  const counts = spoken.filter(id => id.startsWith('count-'));
-  expect(counts).toEqual(['count-1', 'count-2', 'count-3', 'count-4', 'count-5']);
-  expect(spoken).toContain('join');
-  expect(spoken).toContain('is-5');
-  expect(spoken.some(id => id.startsWith('cheer-'))).toBeTruthy();
-});
-
-test('tapping instead of dragging also merges', async ({ page }) => {
-  await openAdd(page, 4, 1);
-  await page.click('#add-a');
-  await page.waitForSelector('#add-result .cube');
-  expect(await page.locator('#add-result .cube').count()).toBe(5);
-});
-
-test('a stalled drag hints rather than failing', async ({ page }) => {
-  await openAdd(page, 2, 2);
-  const box = await page.locator('#add-a').boundingBox();
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(box.x + box.width / 2 + 30, box.y + box.height / 2, { steps: 3 });
-  await page.mouse.up();
-  expect(await page.evaluate(() => window.__nb.add.state.merged)).toBe(false);
-  expect(await page.evaluate(() => window.__nb.spoken)).toContain('nudge-drag');
-});
-
-test('again offers a new pair within the maximum', async ({ page }) => {
-  await openAdd(page);
-  await dragTogether(page);
-  await page.waitForFunction(() => window.__nb.add.state.merged);
-  await page.waitForSelector('#add-again:not([hidden])');
-  await page.click('#add-again');
-  await page.waitForFunction(() => !window.__nb.add.state.merged);
-  const { a, b, max } = await page.evaluate(() => ({
-    a: window.__nb.add.state.a, b: window.__nb.add.state.b, max: window.__nb.settings.MAX_NUMBER,
-  }));
-  expect(a).toBeGreaterThanOrEqual(1);
-  expect(b).toBeGreaterThanOrEqual(1);
-  expect(a + b).toBeLessThanOrEqual(max);
-});
-
-test('a Ten never ends up with a cube under the again button', async ({ page }) => {
-  await openAdd(page, 5, 5);
-  await page.click('#add-a');
-  await page.waitForSelector('#add-again:not([hidden])');
-  // What matters: a tap in the middle of "again" reaches the button, not a cube.
-  const hit = await page.evaluate(() => {
-    const b = document.getElementById('add-again');
-    const r = b.getBoundingClientRect();
-    const el = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
-    return el === b || b.contains(el);
-  });
-  expect(hit).toBeTruthy();
-  const again = await page.locator('#add-again').boundingBox();
-  const bottom = await page.locator('#add-result .cube').last().boundingBox();
-  expect(bottom.y + bottom.height).toBeLessThanOrEqual(again.y + 12);   // the dance dips a corner a few px
-  await page.click('#add-again');
-  await page.waitForFunction(() => !window.__nb.add.state.merged);
 });
 
 test('pairs always sum within the maximum across many draws', async ({ page }) => {
@@ -166,8 +181,7 @@ async function openAddFast(page, delay = 250) {
 
 test('after a pause both buddies glow', async ({ page }) => {
   await openAddFast(page);
-  await expect(page.locator('#add-a.hint')).toBeVisible({ timeout: 3000 });
-  await expect(page.locator('#add-b.hint')).toBeVisible();
+  await expect(page.locator('#add-board .tower.hint')).toHaveCount(2, { timeout: 3000 });
 });
 
 test('a longer pause asks her to push them together', async ({ page }) => {
@@ -177,8 +191,10 @@ test('a longer pause asks her to push them together', async ({ page }) => {
 
 test('merging stops the nudge', async ({ page }) => {
   await openAddFast(page, 400);
-  await page.click('#add-a', { force: true });   // it may already be glowing, which Playwright counts as unstable
-  await page.waitForFunction(() => window.__nb.add.state.merged);
+  await page.evaluate(() => window.__nb.add.setPair(1, 1));
+  await page.waitForFunction(() => window.__nb.add.state.towers.every(t => t.resting));
+  await dropOnto(page);
+  await merged(page);
   await page.evaluate(() => { window.__nb.spoken.length = 0; });
   await page.waitForTimeout(1200);
   expect(await page.evaluate(() => window.__nb.spoken)).not.toContain('nudge-drag');
